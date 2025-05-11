@@ -1,0 +1,14 @@
+app/page.tsx
+app/components/AdminForm.tsx
+app/admin/login/page.tsx
+app/admin/manager/page.tsx
+app/admin/accounts/upload/_code_page.tsx
+app/admin/accounts/page.tsx
+app/admin/accounts/upload/[code]/page.tsx
+app/admin/list/page.tsx
+app/admin/admins/page.tsx
+app/admin/home/page.tsx
+app/namebook/register/upload/ok/page.tsx
+app/namebook/register/upload/page.tsx
+app/namebook/page.tsx
+app/namebook/register/page.tsx 

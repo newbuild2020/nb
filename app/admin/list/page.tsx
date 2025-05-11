@@ -1,4 +1,5 @@
 "use client";
+"use client";
 import { useEffect as useNextEffect, useState as useNextState } from 'react';
 import jsPDF from 'jspdf';
 import { registerFont } from '../../../utils/NotoSansSC.js';
