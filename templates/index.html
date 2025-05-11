@@ -1,0 +1,32 @@
+<!-- テーブルヘッダー -->
+<thead class="bg-gray-50">
+    <tr>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ふりがな</th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ローマ字</th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">職種</th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">登録日時</th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">登録者名</th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最終更新日時</th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">更新者名</th>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+    </tr>
+</thead>
+<tbody class="bg-white divide-y divide-gray-200">
+    {% for worker in workers %}
+    <tr>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ worker.name }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ worker.name_kana }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ worker.name_romaji }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ worker.job_type }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ worker.registration_date.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ worker.registered_by }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ worker.last_modified_date.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ worker.modified_by }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <button onclick="showDetailModal({{ worker.id }})" class="text-indigo-600 hover:text-indigo-900 mr-3">詳細</button>
+            <button onclick="showEditModal({{ worker.id }})" class="text-indigo-600 hover:text-indigo-900">編集</button>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody> 

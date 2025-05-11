@@ -1,0 +1,23 @@
+<!-- 登録・更新情報 -->
+<div class="mb-4">
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">登録日時</label>
+            <p class="mt-1 text-sm text-gray-900">{{ worker.registration_date.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">登録者名</label>
+            <p class="mt-1 text-sm text-gray-900">{{ worker.registered_by }}</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">最終更新日時</label>
+            <p class="mt-1 text-sm text-gray-900">{{ worker.last_modified_date.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">更新者名</label>
+            <p class="mt-1 text-sm text-gray-900">{{ worker.modified_by }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- 基本情報 --> 

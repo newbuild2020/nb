@@ -1,0 +1,81 @@
+.admin-container {
+  min-height: 100vh;
+  background: var(--background);
+  padding: 2rem;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--secondary);
+}
+
+.admin-title {
+  color: var(--primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--secondary);
+}
+
+.admin-table th {
+  background: var(--secondary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.admin-table tr:hover {
+  background: var(--secondary);
+}
+
+.admin-button {
+  margin-right: 0.5rem;
+}
+
+.admin-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-modal-content {
+  background: var(--background);
+  padding: 2rem;
+  border-radius: 1rem;
+  max-width: 500px;
+  width: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  .admin-header {
+    border-bottom-color: var(--secondary);
+  }
+  
+  .admin-table th {
+    background: var(--secondary);
+  }
+  
+  .admin-table tr:hover {
+    background: var(--secondary);
+  }
+} 
