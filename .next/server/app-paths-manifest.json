@@ -1,7 +1,0 @@
-{
-  "/not-found": "app/not-found.js",
-  "/admin/admins/page": "app/admin/admins/page.js",
-  "/namebook/register/page": "app/namebook/register/page.js",
-  "/admin/accounts/page": "app/admin/accounts/page.js",
-  "/admin/login/page": "app/admin/login/page.js"
-}
