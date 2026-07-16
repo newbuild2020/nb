@@ -6,9 +6,11 @@ import {
   PREFECTURE_NAMES,
   KENPO_MIN_YEAR,
   KENPO_MAX_YEAR,
+  KOYO_INDUSTRY_LABELS,
   ROUSAI_DEFAULT_RATE,
   calcPayroll,
   type PayrollInput,
+  type KoyoIndustry,
 } from "../lib/payroll";
 
 const MONTH_NAMES = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
@@ -31,11 +33,9 @@ export default function SalaryPage() {
   const [grossSalary, setGrossSalary] = useState(300000);
   const [dependents, setDependents] = useState(0);
   const [insuranceType, setInsuranceType] = useState<"kyokai" | "kumiai">("kyokai");
-  const [kumiaiHealthEmployeeRate, setKumiaiHealthEmployeeRate] = useState(4.5);
-  const [kumiaiHealthEmployerRate, setKumiaiHealthEmployerRate] = useState(5.5);
-  const [kumiaiKaigoEmployeeRate, setKumiaiKaigoEmployeeRate] = useState(0.8);
-  const [kumiaiKaigoEmployerRate, setKumiaiKaigoEmployerRate] = useState(0.8);
+  const [kumiaiHealthMonthly, setKumiaiHealthMonthly] = useState(0);
   const [kumiaiFee, setKumiaiFee] = useState(0);
+  const [koyoIndustry, setKoyoIndustry] = useState<KoyoIndustry>("construction");
   const [rousaiRate, setRousaiRate] = useState(ROUSAI_DEFAULT_RATE);
 
   const result = useMemo(() => {
@@ -51,11 +51,9 @@ export default function SalaryPage() {
       grossSalary,
       dependents,
       insuranceType,
-      kumiaiHealthEmployeeRate,
-      kumiaiHealthEmployerRate,
-      kumiaiKaigoEmployeeRate,
-      kumiaiKaigoEmployerRate,
+      kumiaiHealthMonthly,
       kumiaiFee,
+      koyoIndustry,
       rousaiRate,
     };
     try {
@@ -65,8 +63,7 @@ export default function SalaryPage() {
     }
   }, [
     name, birth, prefectureIndex, isExecutive, workYear, workMonth, paymentOffset,
-    grossSalary, dependents, insuranceType, kumiaiHealthEmployeeRate, kumiaiHealthEmployerRate,
-    kumiaiKaigoEmployeeRate, kumiaiKaigoEmployerRate, kumiaiFee, rousaiRate,
+    grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiFee, koyoIndustry, rousaiRate,
   ]);
 
   const labelCls = "block text-sm font-medium text-gray-700 mb-1";
@@ -188,7 +185,7 @@ export default function SalaryPage() {
                 className={`flex-1 py-2 text-sm font-medium ${insuranceType === "kumiai" ? "bg-blue-700 text-white" : "bg-white text-gray-600"}`}
                 onClick={() => setInsuranceType("kumiai")}
               >
-                組合健保(健保組合)
+                国保組合・その他
               </button>
             </div>
 
@@ -199,32 +196,18 @@ export default function SalaryPage() {
                 を労使折半で計算します。勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和7)年度の官方料率を自動適用します。
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  建設国保などの組合保険は<span className="font-medium">全額本人負担</span>です。
+                  会社が立て替えて給与から控除するため、会社負担は0円になります。
+                </p>
                 <div>
-                  <label className={labelCls}>健康保険料率 本人負担(%)</label>
-                  <input type="number" step={0.01} min={0} className={inputCls}
-                    value={kumiaiHealthEmployeeRate}
-                    onChange={(e) => setKumiaiHealthEmployeeRate(Math.max(0, Number(e.target.value) || 0))} />
+                  <label className={labelCls}>健康保険料の月額(介護保険分込み・円)</label>
+                  <input type="number" min={0} step={100} className={inputCls}
+                    value={kumiaiHealthMonthly}
+                    onChange={(e) => setKumiaiHealthMonthly(Math.max(0, Number(e.target.value) || 0))} />
                 </div>
                 <div>
-                  <label className={labelCls}>健康保険料率 会社負担(%)</label>
-                  <input type="number" step={0.01} min={0} className={inputCls}
-                    value={kumiaiHealthEmployerRate}
-                    onChange={(e) => setKumiaiHealthEmployerRate(Math.max(0, Number(e.target.value) || 0))} />
-                </div>
-                <div>
-                  <label className={labelCls}>介護保険料率 本人負担(%)</label>
-                  <input type="number" step={0.01} min={0} className={inputCls}
-                    value={kumiaiKaigoEmployeeRate}
-                    onChange={(e) => setKumiaiKaigoEmployeeRate(Math.max(0, Number(e.target.value) || 0))} />
-                </div>
-                <div>
-                  <label className={labelCls}>介護保険料率 会社負担(%)</label>
-                  <input type="number" step={0.01} min={0} className={inputCls}
-                    value={kumiaiKaigoEmployerRate}
-                    onChange={(e) => setKumiaiKaigoEmployerRate(Math.max(0, Number(e.target.value) || 0))} />
-                </div>
-                <div className="col-span-2">
                   <label className={labelCls}>組合費(円/月・給与から控除)</label>
                   <input type="number" min={0} step={100} className={inputCls}
                     value={kumiaiFee}
@@ -232,16 +215,36 @@ export default function SalaryPage() {
                 </div>
               </div>
             )}
-
-            {!isExecutive && (
-              <div className="mt-4">
-                <label className={labelCls}>労災保険料率(%・会社全額負担)</label>
-                <input type="number" step={0.05} min={0} className={inputCls}
-                  value={rousaiRate}
-                  onChange={(e) => setRousaiRate(Math.max(0, Number(e.target.value) || 0))} />
-              </div>
-            )}
           </section>
+
+          {!isExecutive && (
+            <section className={cardCls}>
+              <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">雇用保険・労災保険</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>雇用保険の業種区分</label>
+                  <select className={inputCls} value={koyoIndustry} onChange={(e) => setKoyoIndustry(e.target.value as KoyoIndustry)}>
+                    {(Object.keys(KOYO_INDUSTRY_LABELS) as KoyoIndustry[]).map((k) => (
+                      <option key={k} value={k}>{KOYO_INDUSTRY_LABELS[k]}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>労災保険料率(%・会社全額負担)</label>
+                  <input type="number" step={0.05} min={0} className={inputCls}
+                    value={rousaiRate}
+                    onChange={(e) => setRousaiRate(Math.max(0, Number(e.target.value) || 0))} />
+                </div>
+              </div>
+              {result && (
+                <p className="text-xs text-gray-500 mt-3">
+                  {KOYO_INDUSTRY_LABELS[koyoIndustry]}の雇用保険料率
+                  (本人 {result.applied.koyoEmployeeRate}% / 会社 {result.applied.koyoEmployerRate}%)を適用中。
+                  労災保険料率は事業の種類ごとに異なります(例: 建築事業 0.95%、その他の各種事業 0.3%)。
+                </p>
+              )}
+            </section>
+          )}
         </div>
 
         {/* ==== 計算結果 ==== */}
@@ -263,7 +266,7 @@ export default function SalaryPage() {
                   {insuranceType === "kyokai" && <div>介護保険: {result.applied.kaigoRate}%</div>}
                   <div>厚生年金: {result.applied.pensionRate}%</div>
                   <div>子ども・子育て拠出金: {result.applied.kodomoRate}%</div>
-                  {!isExecutive && <div>雇用保険 本人: {result.applied.koyoEmployeeRate}%</div>}
+                  {!isExecutive && <div>雇用保険 本人: {result.applied.koyoEmployeeRate}%({KOYO_INDUSTRY_LABELS[koyoIndustry]})</div>}
                   {!isExecutive && <div>雇用保険 会社: {result.applied.koyoEmployerRate}%</div>}
                   <div>所得税: {result.applied.taxYear}年分の計算式</div>
                 </div>
@@ -274,8 +277,8 @@ export default function SalaryPage() {
                   本人(手取り){name && <span className="ml-2 text-gray-500 font-normal">{name} 様</span>}
                 </h2>
                 <p className="text-xs text-gray-500 mb-3">
-                  標準報酬月額: 健保 {yen(result.healthSmr)} / 厚年 {yen(result.pensionSmr)}
-                  {result.kaigoApplied && " ・介護保険第2号被保険者(40〜64歳)"}
+                  標準報酬月額: {insuranceType === "kyokai" && `健保 ${yen(result.healthSmr)} / `}厚年 {yen(result.pensionSmr)}
+                  {result.kaigoApplied && insuranceType === "kyokai" && " ・介護保険第2号被保険者(40〜64歳)"}
                 </p>
                 <table className="w-full text-sm">
                   <tbody>
@@ -284,13 +287,17 @@ export default function SalaryPage() {
                       <td className="py-2 text-right font-medium">{yen(grossSalary)}</td>
                     </tr>
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">健康保険料</td>
+                      <td className="py-2 text-gray-600">
+                        健康保険料{insuranceType === "kumiai" && "(全額本人負担・介護分込み)"}
+                      </td>
                       <td className="py-2 text-right text-red-600">-{yen(result.healthEmployee)}</td>
                     </tr>
-                    <tr className="border-b">
-                      <td className="py-2 text-gray-600">介護保険料</td>
-                      <td className="py-2 text-right text-red-600">-{yen(result.kaigoEmployee)}</td>
-                    </tr>
+                    {insuranceType === "kyokai" && (
+                      <tr className="border-b">
+                        <td className="py-2 text-gray-600">介護保険料</td>
+                        <td className="py-2 text-right text-red-600">-{yen(result.kaigoEmployee)}</td>
+                      </tr>
+                    )}
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">厚生年金保険料</td>
                       <td className="py-2 text-right text-red-600">-{yen(result.pensionEmployee)}</td>
@@ -326,13 +333,17 @@ export default function SalaryPage() {
                 <table className="w-full text-sm">
                   <tbody>
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">健康保険料(会社分)</td>
+                      <td className="py-2 text-gray-600">
+                        健康保険料(会社分){insuranceType === "kumiai" && " ※全額本人負担のため0"}
+                      </td>
                       <td className="py-2 text-right">{yen(result.healthEmployer)}</td>
                     </tr>
-                    <tr className="border-b">
-                      <td className="py-2 text-gray-600">介護保険料(会社分)</td>
-                      <td className="py-2 text-right">{yen(result.kaigoEmployer)}</td>
-                    </tr>
+                    {insuranceType === "kyokai" && (
+                      <tr className="border-b">
+                        <td className="py-2 text-gray-600">介護保険料(会社分)</td>
+                        <td className="py-2 text-right">{yen(result.kaigoEmployer)}</td>
+                      </tr>
+                    )}
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">厚生年金保険料(会社分)</td>
                       <td className="py-2 text-right">{yen(result.pensionEmployer)}</td>
@@ -363,7 +374,7 @@ export default function SalaryPage() {
 
               <p className="text-xs text-gray-400 leading-relaxed">
                 ※ 勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和7)年度の官方料率
-                (協会けんぽ都道府県別料率・介護保険・厚生年金・雇用保険(一般の事業)・子ども・子育て拠出金)を自動適用します。
+                (協会けんぽ都道府県別料率・介護保険・厚生年金・雇用保険(業種別)・子ども・子育て拠出金)を自動適用します。
                 源泉所得税は支給年の電算機計算の特例(甲欄)により計算しています。
                 住民税・通勤手当の非課税処理などは含みません。実際の給与計算では官方料額表もあわせてご確認ください。
               </p>

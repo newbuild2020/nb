@@ -15,9 +15,17 @@ import {
   kodomoRate,
   pensionSmrRange,
   calcWithholdingTax,
+  type KoyoIndustry,
 } from "./payrollRates";
 
-export { PREFECTURE_NAMES, KENPO_HISTORY, KENPO_MIN_YEAR, KENPO_MAX_YEAR } from "./payrollRates";
+export {
+  PREFECTURE_NAMES,
+  KENPO_HISTORY,
+  KENPO_MIN_YEAR,
+  KENPO_MAX_YEAR,
+  KOYO_INDUSTRY_LABELS,
+  type KoyoIndustry,
+} from "./payrollRates";
 
 /** 労災保険料率デフォルト(その他の各種事業)% */
 export const ROUSAI_DEFAULT_RATE = 0.3;
@@ -145,13 +153,15 @@ export interface PayrollInput {
   paymentOffset: 0 | 1 | 2; // 当月/翌月/翌々月払い
   grossSalary: number; // 総支給額(月)
   dependents: number; // 扶養親族等の数
-  insuranceType: "kyokai" | "kumiai"; // 協会けんぽ / 組合健保
-  // 組合健保のときのみ使用(%)
-  kumiaiHealthEmployeeRate: number;
-  kumiaiHealthEmployerRate: number;
-  kumiaiKaigoEmployeeRate: number;
-  kumiaiKaigoEmployerRate: number;
+  insuranceType: "kyokai" | "kumiai"; // 協会けんぽ / 国保組合・その他
+  /**
+   * 国保組合・その他のときのみ使用。
+   * 健康保険料の月額(介護保険分込み・円)。全額本人負担で、
+   * 会社が立て替えて給与から控除する(会社負担は0)。
+   */
+  kumiaiHealthMonthly: number;
   kumiaiFee: number; // 組合費(本人給与から控除・円/月)
+  koyoIndustry: KoyoIndustry; // 雇用保険の業種区分
   rousaiRate: number; // 労災保険料率 %
 }
 
@@ -215,7 +225,7 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   const kenpoRateP = kenpoYear.rates[input.prefectureIndex];
   const kaigoRateP = kenpoYear.kaigo;
   const pensionRateP = pensionRate(wy, wm);
-  const koyo = koyoRates(wy, wm);
+  const koyo = koyoRates(wy, wm, input.koyoIndustry);
   const kodomoRateP = kodomoRate(wy, wm);
 
   // 保険料の対象月は勤務月で判定
@@ -225,8 +235,8 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
 
   // ---- 健康保険・介護保険 ----
   let healthEmployee = 0, healthEmployer = 0, kaigoEmployee = 0, kaigoEmployer = 0;
-  if (healthOk) {
-    if (input.insuranceType === "kyokai") {
+  if (input.insuranceType === "kyokai") {
+    if (healthOk) {
       const total = hSmr * (kenpoRateP / 100);
       healthEmployee = roundEmployeeShare(total / 2);
       healthEmployer = Math.round(total) - healthEmployee;
@@ -235,15 +245,11 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
         kaigoEmployee = roundEmployeeShare(kTotal / 2);
         kaigoEmployer = Math.round(kTotal) - kaigoEmployee;
       }
-    } else {
-      // 組合健保: 本人・会社の料率を個別指定
-      healthEmployee = roundEmployeeShare(hSmr * (input.kumiaiHealthEmployeeRate / 100));
-      healthEmployer = Math.round(hSmr * (input.kumiaiHealthEmployerRate / 100));
-      if (kaigoOk) {
-        kaigoEmployee = roundEmployeeShare(hSmr * (input.kumiaiKaigoEmployeeRate / 100));
-        kaigoEmployer = Math.round(hSmr * (input.kumiaiKaigoEmployerRate / 100));
-      }
     }
+  } else {
+    // 国保組合・その他: 保険料(介護分込み)は全額本人負担。
+    // 会社が立て替えて給与から控除するため会社負担は0。
+    healthEmployee = Math.round(input.kumiaiHealthMonthly || 0);
   }
 
   // ---- 厚生年金 ----

@@ -196,30 +196,67 @@ export function pensionRate(year: number, month: number): number {
   return 17.828;                          // 2015年9月分〜2016年8月分
 }
 
-// ============ 雇用保険料率(一般の事業・%) ============
+// ============ 雇用保険料率(業種別・%) ============
+
+/** 雇用保険の業種区分 */
+export type KoyoIndustry = "general" | "agriculture" | "construction";
+
+export const KOYO_INDUSTRY_LABELS: Record<KoyoIndustry, string> = {
+  general: "一般の事業",
+  agriculture: "農林水産・清酒製造の事業",
+  construction: "建設の事業",
+};
 
 export interface KoyoRates {
   employee: number;
   employer: number;
 }
 
-const KOYO_PERIODS: { fromYm: number; employee: number; employer: number }[] = [
-  // fromYm = year*12 + (month-1)。新しい順に評価する
-  { fromYm: 2025 * 12 + 3, employee: 0.55, employer: 0.9 },  // 令和7年4月〜
-  { fromYm: 2023 * 12 + 3, employee: 0.6, employer: 0.95 },  // 令和5年4月〜令和7年3月
-  { fromYm: 2022 * 12 + 9, employee: 0.5, employer: 0.85 },  // 令和4年10月〜令和5年3月
-  { fromYm: 2022 * 12 + 3, employee: 0.3, employer: 0.65 },  // 令和4年4月〜9月
-  { fromYm: 2017 * 12 + 3, employee: 0.3, employer: 0.6 },   // 平成29年4月〜令和4年3月
-  { fromYm: 2016 * 12 + 3, employee: 0.4, employer: 0.7 },   // 平成28年4月〜平成29年3月
-  { fromYm: 0, employee: 0.5, employer: 0.85 },              // 〜平成28年3月
+/** 各期間の料率 [本人%, 会社%] を業種別に持つ。fromYm = year*12+(month-1)。新しい順 */
+const KOYO_PERIODS: {
+  fromYm: number;
+  rates: Record<KoyoIndustry, [number, number]>;
+}[] = [
+  {
+    fromYm: 2025 * 12 + 3, // 令和7年4月〜
+    rates: { general: [0.55, 0.9], agriculture: [0.65, 1.0], construction: [0.65, 1.1] },
+  },
+  {
+    fromYm: 2023 * 12 + 3, // 令和5年4月〜令和7年3月
+    rates: { general: [0.6, 0.95], agriculture: [0.7, 1.05], construction: [0.7, 1.15] },
+  },
+  {
+    fromYm: 2022 * 12 + 9, // 令和4年10月〜令和5年3月
+    rates: { general: [0.5, 0.85], agriculture: [0.6, 0.95], construction: [0.6, 1.05] },
+  },
+  {
+    fromYm: 2022 * 12 + 3, // 令和4年4月〜9月
+    rates: { general: [0.3, 0.65], agriculture: [0.4, 0.75], construction: [0.4, 0.85] },
+  },
+  {
+    fromYm: 2017 * 12 + 3, // 平成29年4月〜令和4年3月
+    rates: { general: [0.3, 0.6], agriculture: [0.4, 0.7], construction: [0.4, 0.8] },
+  },
+  {
+    fromYm: 2016 * 12 + 3, // 平成28年4月〜平成29年3月
+    rates: { general: [0.4, 0.7], agriculture: [0.5, 0.8], construction: [0.5, 0.9] },
+  },
+  {
+    fromYm: 0, // 〜平成28年3月
+    rates: { general: [0.5, 0.85], agriculture: [0.6, 0.95], construction: [0.6, 1.05] },
+  },
 ];
 
-export function koyoRates(year: number, month: number): KoyoRates {
+export function koyoRates(year: number, month: number, industry: KoyoIndustry): KoyoRates {
   const ym = year * 12 + (month - 1);
   for (const p of KOYO_PERIODS) {
-    if (ym >= p.fromYm) return { employee: p.employee, employer: p.employer };
+    if (ym >= p.fromYm) {
+      const [employee, employer] = p.rates[industry];
+      return { employee, employer };
+    }
   }
-  return KOYO_PERIODS[KOYO_PERIODS.length - 1];
+  const [employee, employer] = KOYO_PERIODS[KOYO_PERIODS.length - 1].rates[industry];
+  return { employee, employer };
 }
 
 // ============ 子ども・子育て拠出金率(%・会社のみ) ============
