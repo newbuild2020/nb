@@ -166,7 +166,7 @@ export default function UploadDetail() {
       </div>
 
       <a
-        href={`/admin/accounts/upload/${selected.code}`}
+        href={`/admin/accounts/upload/${code}`}
         target="_blank"
         rel="noopener noreferrer"
         className="px-4 py-2 rounded font-medium text-blue-600 hover:underline border border-blue-200 bg-blue-50 mr-2"

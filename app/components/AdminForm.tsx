@@ -179,7 +179,7 @@ export default function AdminForm({ onSubmit, initialData }: AdminFormProps) {
                   } else {
                     setFormData(prev => ({
                       ...prev,
-                      permissions: (prev.permissions || []).filter(p => p !== perm)
+                      permissions: (prev.permissions || []).filter((p: string) => p !== perm)
                     }));
                   }
                 }}
@@ -208,7 +208,7 @@ export default function AdminForm({ onSubmit, initialData }: AdminFormProps) {
                   } else {
                     setFormData(prev => ({
                       ...prev,
-                      langs: (prev.langs || []).filter(l => l !== opt.value)
+                      langs: (prev.langs || []).filter((l: string) => l !== opt.value)
                     }));
                   }
                 }}
