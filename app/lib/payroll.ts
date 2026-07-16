@@ -156,10 +156,15 @@ export interface PayrollInput {
   insuranceType: "kyokai" | "kumiai"; // 協会けんぽ / 国保組合・その他
   /**
    * 国保組合・その他のときのみ使用。
-   * 健康保険料の月額(介護保険分込み・円)。全額本人負担で、
+   * 健康保険料の月額(医療分・円)。全額本人負担で、
    * 会社が立て替えて給与から控除する(会社負担は0)。
    */
   kumiaiHealthMonthly: number;
+  /**
+   * 国保組合・その他の介護保険料の月額(円)。全額本人負担。
+   * 40〜64歳(介護保険第2号被保険者)の月のみ控除される。
+   */
+  kumiaiKaigoMonthly: number;
   kumiaiFee: number; // 組合費(本人給与から控除・円/月)
   koyoIndustry: KoyoIndustry; // 雇用保険の業種区分
   rousaiRate: number; // 労災保険料率 %
@@ -247,9 +252,13 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
       }
     }
   } else {
-    // 国保組合・その他: 保険料(介護分込み)は全額本人負担。
+    // 国保組合・その他: 保険料は全額本人負担。
     // 会社が立て替えて給与から控除するため会社負担は0。
+    // 介護保険分は40〜64歳(第2号被保険者)の月のみ控除する。
     healthEmployee = Math.round(input.kumiaiHealthMonthly || 0);
+    if (kaigoOk) {
+      kaigoEmployee = Math.round(input.kumiaiKaigoMonthly || 0);
+    }
   }
 
   // ---- 厚生年金 ----

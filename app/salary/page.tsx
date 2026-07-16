@@ -34,6 +34,7 @@ export default function SalaryPage() {
   const [dependents, setDependents] = useState(0);
   const [insuranceType, setInsuranceType] = useState<"kyokai" | "kumiai">("kyokai");
   const [kumiaiHealthMonthly, setKumiaiHealthMonthly] = useState(0);
+  const [kumiaiKaigoMonthly, setKumiaiKaigoMonthly] = useState(0);
   const [kumiaiFee, setKumiaiFee] = useState(0);
   const [koyoIndustry, setKoyoIndustry] = useState<KoyoIndustry>("construction");
   const [rousaiRate, setRousaiRate] = useState(ROUSAI_DEFAULT_RATE);
@@ -52,6 +53,7 @@ export default function SalaryPage() {
       dependents,
       insuranceType,
       kumiaiHealthMonthly,
+      kumiaiKaigoMonthly,
       kumiaiFee,
       koyoIndustry,
       rousaiRate,
@@ -63,7 +65,8 @@ export default function SalaryPage() {
     }
   }, [
     name, birth, prefectureIndex, isExecutive, workYear, workMonth, paymentOffset,
-    grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiFee, koyoIndustry, rousaiRate,
+    grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiKaigoMonthly, kumiaiFee,
+    koyoIndustry, rousaiRate,
   ]);
 
   const labelCls = "block text-sm font-medium text-gray-700 mb-1";
@@ -202,10 +205,21 @@ export default function SalaryPage() {
                   会社が立て替えて給与から控除するため、会社負担は0円になります。
                 </p>
                 <div>
-                  <label className={labelCls}>健康保険料の月額(介護保険分込み・円)</label>
+                  <label className={labelCls}>健康保険料の月額(医療分・円)</label>
                   <input type="number" min={0} step={100} className={inputCls}
                     value={kumiaiHealthMonthly}
                     onChange={(e) => setKumiaiHealthMonthly(Math.max(0, Number(e.target.value) || 0))} />
+                </div>
+                <div>
+                  <label className={labelCls}>介護保険料の月額(円・40〜64歳のみ控除)</label>
+                  <input type="number" min={0} step={100} className={inputCls}
+                    value={kumiaiKaigoMonthly}
+                    onChange={(e) => setKumiaiKaigoMonthly(Math.max(0, Number(e.target.value) || 0))} />
+                  {result && !result.kaigoApplied && kumiaiKaigoMonthly > 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      ※ この勤務月は介護保険第2号被保険者(40〜64歳)に該当しないため控除されません。
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className={labelCls}>組合費(円/月・給与から控除)</label>
@@ -278,7 +292,7 @@ export default function SalaryPage() {
                 </h2>
                 <p className="text-xs text-gray-500 mb-3">
                   標準報酬月額: {insuranceType === "kyokai" && `健保 ${yen(result.healthSmr)} / `}厚年 {yen(result.pensionSmr)}
-                  {result.kaigoApplied && insuranceType === "kyokai" && " ・介護保険第2号被保険者(40〜64歳)"}
+                  {result.kaigoApplied && " ・介護保険第2号被保険者(40〜64歳)"}
                 </p>
                 <table className="w-full text-sm">
                   <tbody>
@@ -288,16 +302,17 @@ export default function SalaryPage() {
                     </tr>
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">
-                        健康保険料{insuranceType === "kumiai" && "(全額本人負担・介護分込み)"}
+                        健康保険料{insuranceType === "kumiai" && "(全額本人負担)"}
                       </td>
                       <td className="py-2 text-right text-red-600">-{yen(result.healthEmployee)}</td>
                     </tr>
-                    {insuranceType === "kyokai" && (
-                      <tr className="border-b">
-                        <td className="py-2 text-gray-600">介護保険料</td>
-                        <td className="py-2 text-right text-red-600">-{yen(result.kaigoEmployee)}</td>
-                      </tr>
-                    )}
+                    <tr className="border-b">
+                      <td className="py-2 text-gray-600">
+                        介護保険料{!result.kaigoApplied && "(40〜64歳のみ・対象外)"}
+                        {result.kaigoApplied && insuranceType === "kumiai" && "(全額本人負担)"}
+                      </td>
+                      <td className="py-2 text-right text-red-600">-{yen(result.kaigoEmployee)}</td>
+                    </tr>
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">厚生年金保険料</td>
                       <td className="py-2 text-right text-red-600">-{yen(result.pensionEmployee)}</td>
