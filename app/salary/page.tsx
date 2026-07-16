@@ -219,7 +219,7 @@ export default function SalaryPage() {
 
           <section className={cardCls}>
             <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">基本情報</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>氏名</label>
                 <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="山田 太郎" />
@@ -269,7 +269,7 @@ export default function SalaryPage() {
 
           <section className={cardCls}>
             <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">勤務月・支給月・給与</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>勤務月(対象月)</label>
                 <input
@@ -289,7 +289,7 @@ export default function SalaryPage() {
                   <option value={2}>翌々月払い</option>
                 </select>
               </div>
-              <div className="col-span-2">
+              <div className="sm:col-span-2">
                 <label className={labelCls}>月額給与(総支給額・円)</label>
                 <input
                   type="number" min={0} step={1000} className={inputCls}
@@ -365,7 +365,7 @@ export default function SalaryPage() {
           {!isExecutive && (
             <section className={cardCls}>
               <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">雇用保険・労災保険</h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>雇用保険の業種区分</label>
                   <select className={inputCls} value={koyoIndustry} onChange={(e) => setKoyoIndustry(e.target.value as KoyoIndustry)}>
@@ -406,7 +406,7 @@ export default function SalaryPage() {
 
               <section className={cardCls}>
                 <h2 className="font-bold text-gray-800 mb-3 border-l-4 border-blue-700 pl-2">適用料率({result.applied.kenpoFiscalLabel})</h2>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-600">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-600">
                   {insuranceType === "kyokai" && <div>健康保険: {result.applied.kenpoRate}%</div>}
                   {insuranceType === "kyokai" && <div>介護保険: {result.applied.kaigoRate}%</div>}
                   <div>厚生年金: {result.applied.pensionRate}%</div>

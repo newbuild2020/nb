@@ -66,7 +66,7 @@ export default function PeoplePage() {
       <main className="max-w-3xl mx-auto px-4 mt-6 space-y-6">
         <section className={cardCls}>
           <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">新規登録</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>姓名 *</label>
               <input className={inputCls} value={name} placeholder="山田 太郎"

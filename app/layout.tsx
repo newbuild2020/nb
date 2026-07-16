@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import "./globals.css";
-import Script from 'next/script';
 import ServiceWorkerRegister from './components/ServiceWorkerRegister';
 
 export const metadata: Metadata = {
@@ -32,10 +31,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <head>
-        <Script src="/libs/jspdf.umd.min.js" strategy="beforeInteractive" />
-        <Script src="/fonts/NotoSansJP-Regular.js" strategy="beforeInteractive" />
-      </head>
       <body className={`${GeistSans.className} ${GeistMono.className} antialiased`}>
         <ServiceWorkerRegister />
         {children}

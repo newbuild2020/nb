@@ -47,7 +47,7 @@ export default function SalaryRecordsPage() {
 
       <main className="max-w-4xl mx-auto px-4 mt-6 space-y-6">
         <section className={cardCls}>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
             <h2 className="font-bold text-gray-800 border-l-4 border-blue-700 pl-2">
               保存済みの明細({records.length}件)
             </h2>
