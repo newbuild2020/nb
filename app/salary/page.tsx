@@ -39,16 +39,25 @@ export default function SalaryPage() {
   const [workYear, setWorkYear] = useState(now.getFullYear());
   const [workMonth, setWorkMonth] = useState(now.getMonth() + 1);
   const [paymentOffset, setPaymentOffset] = useState<0 | 1 | 2>(1);
-  const [grossSalary, setGrossSalary] = useState(300000);
-  const [dependents, setDependents] = useState(0);
+  const [grossSalaryStr, setGrossSalaryStr] = useState("300000");
+  const [dependentsStr, setDependentsStr] = useState("0");
   const [insuranceType, setInsuranceType] = useState<"kyokai" | "kumiai">("kyokai");
-  const [kumiaiHealthMonthly, setKumiaiHealthMonthly] = useState(0);
-  const [kumiaiKaigoMonthly, setKumiaiKaigoMonthly] = useState(0);
-  const [kumiaiFee, setKumiaiFee] = useState(0);
+  const [kumiaiHealthStr, setKumiaiHealthStr] = useState("");
+  const [kumiaiKaigoStr, setKumiaiKaigoStr] = useState("");
+  const [kumiaiFeeStr, setKumiaiFeeStr] = useState("");
   const [koyoIndustry, setKoyoIndustry] = useState<KoyoIndustry>("construction");
-  const [rousaiRate, setRousaiRate] = useState(ROUSAI_DEFAULT_RATE);
+  const [rousaiRateStr, setRousaiRateStr] = useState(String(ROUSAI_DEFAULT_RATE));
 
   const [incomeTaxOverride, setIncomeTaxOverride] = useState<number | null>(null);
+  const [taxOverrideStr, setTaxOverrideStr] = useState("");
+
+  // 入力欄は文字列で保持し、計算時に数値へ変換する(0が消せない問題の対策)
+  const grossSalary = Math.max(0, Number(grossSalaryStr) || 0);
+  const dependents = Math.max(0, Math.floor(Number(dependentsStr) || 0));
+  const kumiaiHealthMonthly = Math.max(0, Number(kumiaiHealthStr) || 0);
+  const kumiaiKaigoMonthly = Math.max(0, Number(kumiaiKaigoStr) || 0);
+  const kumiaiFee = Math.max(0, Number(kumiaiFeeStr) || 0);
+  const rousaiRate = Math.max(0, Number(rousaiRateStr) || 0);
   const [records, setRecords] = useState<SalaryRecord[]>([]);
   const [saveMessage, setSaveMessage] = useState("");
   const [people, setPeople] = useState<Person[]>([]);
@@ -74,15 +83,16 @@ export default function SalaryPage() {
         setWorkYear(i.workYear);
         setWorkMonth(i.workMonth);
         setPaymentOffset(i.paymentOffset);
-        setGrossSalary(i.grossSalary);
-        setDependents(i.dependents);
+        setGrossSalaryStr(String(i.grossSalary));
+        setDependentsStr(String(i.dependents));
         setInsuranceType(i.insuranceType);
-        setKumiaiHealthMonthly(i.kumiaiHealthMonthly ?? 0);
-        setKumiaiKaigoMonthly(i.kumiaiKaigoMonthly ?? 0);
-        setKumiaiFee(i.kumiaiFee ?? 0);
+        setKumiaiHealthStr(i.kumiaiHealthMonthly ? String(i.kumiaiHealthMonthly) : "");
+        setKumiaiKaigoStr(i.kumiaiKaigoMonthly ? String(i.kumiaiKaigoMonthly) : "");
+        setKumiaiFeeStr(i.kumiaiFee ? String(i.kumiaiFee) : "");
         setKoyoIndustry(i.koyoIndustry ?? "construction");
-        setRousaiRate(i.rousaiRate ?? ROUSAI_DEFAULT_RATE);
+        setRousaiRateStr(String(i.rousaiRate ?? ROUSAI_DEFAULT_RATE));
         setIncomeTaxOverride(i.incomeTaxOverride ?? null);
+        setTaxOverrideStr(i.incomeTaxOverride != null ? String(i.incomeTaxOverride) : "");
         setEditingId(r.id);
         setEditingLabel(`${i.name} / ${r.result.paymentYear}年${r.result.paymentMonth}月支給分`);
       }
@@ -256,9 +266,9 @@ export default function SalaryPage() {
               <div>
                 <label className={labelCls}>扶養親族等の数</label>
                 <input
-                  type="number" min={0} max={10} className={inputCls}
-                  value={dependents}
-                  onChange={(e) => setDependents(Math.max(0, Number(e.target.value) || 0))}
+                  type="number" min={0} max={10} className={inputCls} placeholder="0"
+                  value={dependentsStr}
+                  onChange={(e) => setDependentsStr(e.target.value)}
                 />
               </div>
             </div>
@@ -292,9 +302,9 @@ export default function SalaryPage() {
               <div className="sm:col-span-2">
                 <label className={labelCls}>月額給与(総支給額・円)</label>
                 <input
-                  type="number" min={0} step={1000} className={inputCls}
-                  value={grossSalary}
-                  onChange={(e) => setGrossSalary(Math.max(0, Number(e.target.value) || 0))}
+                  type="number" min={0} step={1000} className={inputCls} placeholder="0"
+                  value={grossSalaryStr}
+                  onChange={(e) => setGrossSalaryStr(e.target.value)}
                 />
               </div>
             </div>
@@ -337,15 +347,15 @@ export default function SalaryPage() {
                 </p>
                 <div>
                   <label className={labelCls}>健康保険料の月額(医療分・円)</label>
-                  <input type="number" min={0} step={100} className={inputCls}
-                    value={kumiaiHealthMonthly}
-                    onChange={(e) => setKumiaiHealthMonthly(Math.max(0, Number(e.target.value) || 0))} />
+                  <input type="number" min={0} step={100} className={inputCls} placeholder="0"
+                    value={kumiaiHealthStr}
+                    onChange={(e) => setKumiaiHealthStr(e.target.value)} />
                 </div>
                 <div>
                   <label className={labelCls}>介護保険料の月額(円・40〜64歳のみ控除)</label>
-                  <input type="number" min={0} step={100} className={inputCls}
-                    value={kumiaiKaigoMonthly}
-                    onChange={(e) => setKumiaiKaigoMonthly(Math.max(0, Number(e.target.value) || 0))} />
+                  <input type="number" min={0} step={100} className={inputCls} placeholder="0"
+                    value={kumiaiKaigoStr}
+                    onChange={(e) => setKumiaiKaigoStr(e.target.value)} />
                   {result && !result.kaigoApplied && kumiaiKaigoMonthly > 0 && (
                     <p className="text-xs text-amber-600 mt-1">
                       ※ この勤務月は介護保険第2号被保険者(40〜64歳)に該当しないため控除されません。
@@ -354,9 +364,9 @@ export default function SalaryPage() {
                 </div>
                 <div>
                   <label className={labelCls}>組合費(円/月・給与から控除)</label>
-                  <input type="number" min={0} step={100} className={inputCls}
-                    value={kumiaiFee}
-                    onChange={(e) => setKumiaiFee(Math.max(0, Number(e.target.value) || 0))} />
+                  <input type="number" min={0} step={100} className={inputCls} placeholder="0"
+                    value={kumiaiFeeStr}
+                    onChange={(e) => setKumiaiFeeStr(e.target.value)} />
                 </div>
               </div>
             )}
@@ -376,9 +386,9 @@ export default function SalaryPage() {
                 </div>
                 <div>
                   <label className={labelCls}>労災保険料率(%・会社全額負担)</label>
-                  <input type="number" step={0.05} min={0} className={inputCls}
-                    value={rousaiRate}
-                    onChange={(e) => setRousaiRate(Math.max(0, Number(e.target.value) || 0))} />
+                  <input type="number" step={0.05} min={0} className={inputCls} placeholder="0.3"
+                    value={rousaiRateStr}
+                    onChange={(e) => setRousaiRateStr(e.target.value)} />
                 </div>
               </div>
               {result && (
@@ -460,7 +470,7 @@ export default function SalaryPage() {
                             <span className="ml-1 text-xs text-amber-600">(手動)</span>
                             <button
                               className="ml-2 text-xs text-blue-700 underline"
-                              onClick={() => setIncomeTaxOverride(null)}
+                              onClick={() => { setIncomeTaxOverride(null); setTaxOverrideStr(""); }}
                             >
                               自動計算に戻す
                             </button>
@@ -476,8 +486,11 @@ export default function SalaryPage() {
                           min={0}
                           step={10}
                           className="w-28 text-right border border-gray-300 rounded px-2 py-1 text-red-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={result.incomeTax}
-                          onChange={(e) => setIncomeTaxOverride(Math.max(0, Number(e.target.value) || 0))}
+                          value={incomeTaxOverride !== null ? taxOverrideStr : String(result.incomeTax)}
+                          onChange={(e) => {
+                            setTaxOverrideStr(e.target.value);
+                            setIncomeTaxOverride(Math.max(0, Number(e.target.value) || 0));
+                          }}
                         />
                         {" 円"}
                       </td>
