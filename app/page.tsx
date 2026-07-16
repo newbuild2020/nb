@@ -73,11 +73,10 @@ export default function Home() {
       path: "/namebook"
     },
     {
-      id: "feature2",
-      zh: "功能2（开发中）",
-      ja: "機能2（開発中）",
-      path: "#",
-      disabled: true
+      id: "salary",
+      zh: "给料计算",
+      ja: "給料計算",
+      path: "/salary"
     },
     {
       id: "feature3",
