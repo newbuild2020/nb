@@ -10,6 +10,7 @@ import {
   exportSalaryCsv,
   type SalaryRecord,
 } from "../../lib/salaryStore";
+import { syncSalaryRecords } from "../../lib/cloudSync";
 
 function yen(n: number): string {
   return n.toLocaleString("ja-JP") + " 円";
@@ -24,6 +25,8 @@ export default function SalaryRecordsPage() {
 
   useEffect(() => {
     setRecords(loadSalaryRecords());
+    // クラウドと同期(オフライン時はローカルのまま)
+    syncSalaryRecords().then((list) => { if (list) setRecords(list); });
   }, []);
 
   function handleDelete(r: SalaryRecord) {

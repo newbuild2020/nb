@@ -14,6 +14,7 @@ import {
   type Person,
   type PersonRole,
 } from "../lib/peopleStore";
+import { syncPeople } from "../lib/cloudSync";
 
 const GENDER_LABELS: Record<string, string> = { male: "男", female: "女", "": "-" };
 
@@ -37,6 +38,8 @@ export default function PeoplePage() {
 
   useEffect(() => {
     setPeople(loadPeople());
+    // クラウドと同期(オフライン時はローカルのまま)
+    syncPeople().then((list) => { if (list) setPeople(list); });
   }, []);
 
   function resetForm() {

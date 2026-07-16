@@ -6,6 +6,8 @@
  *   社員: NB-001, NB-002, ...
  */
 
+import { pushItem, pushTombstone } from "./supabaseClient";
+
 export type PersonRole = "executive" | "employee";
 export type PersonStatus = "active" | "retired";
 
@@ -22,6 +24,7 @@ export interface Person {
   hireDate: string; // 入社年月日 YYYY-MM-DD
   status: PersonStatus; // 在職/退職(初回登録時は在職)
   createdAt: string;
+  updatedAt?: string; // クラウド同期の競合解決に使用
 }
 
 export const ROLE_LABELS: Record<PersonRole, string> = {
@@ -103,16 +106,19 @@ export function savePerson(
   p: Omit<Person, "id" | "createdAt" | "code" | "status">
 ): { list: Person[]; person: Person } {
   const list = loadPeople();
+  const now = new Date().toISOString();
   const person: Person = {
     ...p,
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     code: nextCode(list, p.role),
     status: "active",
-    createdAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
   };
   list.push(person);
   sortPeople(list);
   localStorage.setItem(KEY, JSON.stringify(list));
+  pushItem("people", person.id, person);
   return { list, person };
 }
 
@@ -125,13 +131,14 @@ export function updatePerson(
   const idx = list.findIndex((x) => x.id === id);
   if (idx >= 0) {
     const before = list[idx];
-    const updated: Person = { ...before, ...patch };
+    const updated: Person = { ...before, ...patch, updatedAt: new Date().toISOString() };
     if (patch.role && patch.role !== before.role) {
       updated.code = nextCode(list.filter((x) => x.id !== id), patch.role);
     }
     list[idx] = updated;
     sortPeople(list);
     localStorage.setItem(KEY, JSON.stringify(list));
+    pushItem("people", updated.id, updated);
   }
   return list;
 }
@@ -139,5 +146,13 @@ export function updatePerson(
 export function deletePerson(id: string): Person[] {
   const list = loadPeople().filter((p) => p.id !== id);
   localStorage.setItem(KEY, JSON.stringify(list));
+  pushTombstone("people", id);
   return list;
+}
+
+/** クラウド同期後のリストで丸ごと置き換える(cloudSync用) */
+export function overwritePeople(list: Person[]): void {
+  const sorted = [...list];
+  sortPeople(sorted);
+  localStorage.setItem(KEY, JSON.stringify(sorted));
 }

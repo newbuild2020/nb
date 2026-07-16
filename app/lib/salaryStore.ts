@@ -7,6 +7,7 @@
 
 import type { PayrollInput, PayrollResult } from "./payroll";
 import type { PersonRole } from "./peopleStore";
+import { pushItem, pushTombstone } from "./supabaseClient";
 
 /**
  * 明細作成時点の人員情報スナップショット。
@@ -55,6 +56,7 @@ export function saveSalaryRecord(
   const list = loadSalaryRecords();
   list.unshift(record); // 新しい順
   localStorage.setItem(KEY, JSON.stringify(list));
+  pushItem("salary_records", record.id, record);
   return record;
 }
 
@@ -71,13 +73,22 @@ export function updateSalaryRecord(
       : r
   );
   localStorage.setItem(KEY, JSON.stringify(list));
+  const updated = list.find((r) => r.id === id);
+  if (updated) pushItem("salary_records", id, updated);
   return list;
 }
 
 export function deleteSalaryRecord(id: string): SalaryRecord[] {
   const list = loadSalaryRecords().filter((r) => r.id !== id);
   localStorage.setItem(KEY, JSON.stringify(list));
+  pushTombstone("salary_records", id);
   return list;
+}
+
+/** クラウド同期後のリストで丸ごと置き換える(cloudSync用) */
+export function overwriteSalaryRecords(list: SalaryRecord[]): void {
+  const sorted = [...list].sort((a, b) => (a.savedAt < b.savedAt ? 1 : -1)); // 新しい順
+  localStorage.setItem(KEY, JSON.stringify(sorted));
 }
 
 /** 全明細をCSV(Excel対応・UTF-8 BOM付き)としてダウンロード */

@@ -11,6 +11,7 @@ import {
 } from "../lib/salaryStore";
 import { useRequireLogin } from "../lib/auth";
 import { loadPeople, type Person } from "../lib/peopleStore";
+import { syncPeople, syncSalaryRecords } from "../lib/cloudSync";
 import {
   PREFECTURE_NAMES,
   KENPO_MIN_YEAR,
@@ -70,6 +71,9 @@ export default function SalaryPage() {
     const loaded = loadSalaryRecords();
     setRecords(loaded);
     setPeople(loadPeople());
+    // クラウドと同期(オフライン時はローカルのまま)
+    syncPeople().then((list) => { if (list) setPeople(list); });
+    syncSalaryRecords().then((list) => { if (list) setRecords(list); });
     // 明細一覧の「編集」から遷移してきた場合、対象明細を読み込む
     const editId = sessionStorage.getItem("salaryEditRecordId");
     if (editId) {
