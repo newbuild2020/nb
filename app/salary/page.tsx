@@ -7,6 +7,7 @@ import {
   saveSalaryRecord,
   updateSalaryRecord,
   type SalaryRecord,
+  type PersonSnapshot,
 } from "../lib/salaryStore";
 import { useRequireLogin } from "../lib/auth";
 import { loadPeople, type Person } from "../lib/peopleStore";
@@ -99,6 +100,9 @@ export default function SalaryPage() {
     }
   }, []);
 
+  // 在職の人員のみ選択可能(退職者は除外)
+  const activePeople = people.filter((p) => p.status === "active");
+
   function handleSelectPerson(id: string) {
     setSelectedPersonId(id);
     const p = people.find((x) => x.id === id);
@@ -106,7 +110,20 @@ export default function SalaryPage() {
       setName(p.name);
       setBirth(p.birth);
       setPrefectureIndex(p.prefectureIndex);
+      setIsExecutive(p.role === "executive");
     }
+  }
+
+  /** 選択中の人員から明細用スナップショット(対象月時点の情報)を作る */
+  function buildSnapshot(): PersonSnapshot | undefined {
+    const p = people.find((x) => x.id === selectedPersonId);
+    if (!p) return undefined;
+    return {
+      code: p.code,
+      role: p.role,
+      address: `${PREFECTURE_NAMES[p.prefectureIndex]}${p.address ? ` ${p.address}` : ""}`,
+      hireDate: p.hireDate || "",
+    };
   }
 
   const currentInput = useMemo<PayrollInput | null>(() => {
@@ -150,11 +167,12 @@ export default function SalaryPage() {
       setSaveMessage("氏名を入力してから保存してください。");
       return;
     }
+    const snapshot = buildSnapshot();
     if (editingId) {
-      setRecords(updateSalaryRecord(editingId, currentInput, result));
+      setRecords(updateSalaryRecord(editingId, currentInput, result, snapshot));
       setSaveMessage(`更新しました(${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分)`);
     } else {
-      saveSalaryRecord(currentInput, result);
+      saveSalaryRecord(currentInput, result, snapshot);
       setRecords(loadSalaryRecords());
       setSaveMessage(`保存しました(${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分)`);
     }
@@ -196,9 +214,9 @@ export default function SalaryPage() {
 
           <section className={cardCls}>
             <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">対象者の選択</h2>
-            {people.length === 0 ? (
+            {activePeople.length === 0 ? (
               <p className="text-sm text-gray-600">
-                登録済みの人員がいません。
+                選択できる在職の人員がいません。
                 <button className="text-blue-700 underline ml-1" onClick={() => router.push("/people")}>
                   人員登録
                 </button>
@@ -212,15 +230,16 @@ export default function SalaryPage() {
                   onChange={(e) => handleSelectPerson(e.target.value)}
                 >
                   <option value="">選択してください(手動入力も可)</option>
-                  {people.map((p) => (
+                  {activePeople.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name}{p.kana && `(${p.kana})`}
+                      {p.code} {p.name}{p.kana && `(${p.kana})`}
                     </option>
                   ))}
                 </select>
                 {selectedPersonId && (
                   <p className="text-xs text-gray-500 mt-2">
-                    氏名・生年月日・地域を自動入力しました。下で修正もできます。
+                    氏名・生年月日・地域・区分(役員/社員)を自動入力しました。下で修正もできます。
+                    保存時に管理番号・住所・入社日も明細に記録されます。
                   </p>
                 )}
               </>

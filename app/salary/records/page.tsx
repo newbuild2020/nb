@@ -79,6 +79,7 @@ export default function SalaryRecordsPage() {
                 <thead>
                   <tr className="text-left text-gray-500 border-b">
                     <th className="py-2 pr-4">保存日時</th>
+                    <th className="py-2 pr-4">管理番号</th>
                     <th className="py-2 pr-4">氏名</th>
                     <th className="py-2 pr-4">勤務月</th>
                     <th className="py-2 pr-4">支給月</th>
@@ -94,6 +95,7 @@ export default function SalaryRecordsPage() {
                       <td className="py-2 pr-4 text-gray-500">
                         {new Date(r.savedAt).toLocaleString("ja-JP", { dateStyle: "short", timeStyle: "short" })}
                       </td>
+                      <td className="py-2 pr-4 font-mono">{r.person?.code ?? "-"}</td>
                       <td className="py-2 pr-4 font-medium">{r.input.name}</td>
                       <td className="py-2 pr-4">{r.input.workYear}/{String(r.input.workMonth).padStart(2, "0")}</td>
                       <td className="py-2 pr-4">{r.result.paymentYear}/{String(r.result.paymentMonth).padStart(2, "0")}</td>
@@ -133,11 +135,19 @@ export default function SalaryRecordsPage() {
               {r.input.name} 様 {r.result.paymentYear}年{r.result.paymentMonth}月支給分
               (勤務月 {r.input.workYear}年{r.input.workMonth}月)
             </h2>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-gray-500 mb-1">
+              {r.person && <>管理番号 <span className="font-mono">{r.person.code}</span> / </>}
               {PREFECTURE_NAMES[r.input.prefectureIndex]} / {r.input.isExecutive ? "役員" : "社員"} /
               {r.input.insuranceType === "kyokai" ? " 協会けんぽ" : " 国保組合・その他"} /
               適用料率 {r.result.applied?.kenpoFiscalLabel ?? "-"}
             </p>
+            {r.person && (
+              <p className="text-xs text-gray-500 mb-4">
+                対象月時点の記録: 住所 {r.person.address || "-"}
+                {r.person.hireDate && ` / 入社日 ${r.person.hireDate}`}
+              </p>
+            )}
+            {!r.person && <span className="block mb-3" />}
             <div className="grid gap-6 md:grid-cols-2">
               <div>
                 <h3 className="text-sm font-bold text-gray-700 mb-2">本人(手取り)</h3>
