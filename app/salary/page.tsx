@@ -1,7 +1,14 @@
 'use client';
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  loadSalaryRecords,
+  saveSalaryRecord,
+  deleteSalaryRecord,
+  exportSalaryCsv,
+  type SalaryRecord,
+} from "../lib/salaryStore";
 import {
   PREFECTURE_NAMES,
   KENPO_MIN_YEAR,
@@ -39,9 +46,15 @@ export default function SalaryPage() {
   const [koyoIndustry, setKoyoIndustry] = useState<KoyoIndustry>("construction");
   const [rousaiRate, setRousaiRate] = useState(ROUSAI_DEFAULT_RATE);
 
-  const result = useMemo(() => {
+  const [records, setRecords] = useState<SalaryRecord[]>([]);
+  const [saveMessage, setSaveMessage] = useState("");
+  useEffect(() => {
+    setRecords(loadSalaryRecords());
+  }, []);
+
+  const currentInput = useMemo<PayrollInput | null>(() => {
     if (!birth || grossSalary <= 0) return null;
-    const input: PayrollInput = {
+    return {
       name,
       birth,
       prefectureIndex,
@@ -58,16 +71,56 @@ export default function SalaryPage() {
       koyoIndustry,
       rousaiRate,
     };
-    try {
-      return calcPayroll(input);
-    } catch {
-      return null;
-    }
   }, [
     name, birth, prefectureIndex, isExecutive, workYear, workMonth, paymentOffset,
     grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiKaigoMonthly, kumiaiFee,
     koyoIndustry, rousaiRate,
   ]);
+
+  const result = useMemo(() => {
+    if (!currentInput) return null;
+    try {
+      return calcPayroll(currentInput);
+    } catch {
+      return null;
+    }
+  }, [currentInput]);
+
+  function handleSave() {
+    if (!currentInput || !result) return;
+    if (!currentInput.name.trim()) {
+      setSaveMessage("氏名を入力してから保存してください。");
+      return;
+    }
+    saveSalaryRecord(currentInput, result);
+    setRecords(loadSalaryRecords());
+    setSaveMessage(`保存しました(${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分)`);
+  }
+
+  function handleLoad(r: SalaryRecord) {
+    const i = r.input;
+    setName(i.name);
+    setBirth(i.birth);
+    setPrefectureIndex(i.prefectureIndex);
+    setIsExecutive(i.isExecutive);
+    setWorkYear(i.workYear);
+    setWorkMonth(i.workMonth);
+    setPaymentOffset(i.paymentOffset);
+    setGrossSalary(i.grossSalary);
+    setDependents(i.dependents);
+    setInsuranceType(i.insuranceType);
+    setKumiaiHealthMonthly(i.kumiaiHealthMonthly ?? 0);
+    setKumiaiKaigoMonthly(i.kumiaiKaigoMonthly ?? 0);
+    setKumiaiFee(i.kumiaiFee ?? 0);
+    setKoyoIndustry(i.koyoIndustry ?? "construction");
+    setRousaiRate(i.rousaiRate ?? ROUSAI_DEFAULT_RATE);
+    setSaveMessage("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleDelete(id: string) {
+    setRecords(deleteSalaryRecord(id));
+  }
 
   const labelCls = "block text-sm font-medium text-gray-700 mb-1";
   const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
@@ -387,6 +440,29 @@ export default function SalaryPage() {
                 </table>
               </section>
 
+              <section className={cardCls}>
+                <div className="flex items-center gap-3">
+                  <button
+                    className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-bold hover:bg-blue-800 transition-colors"
+                    onClick={handleSave}
+                  >
+                    この明細を保存
+                  </button>
+                  {records.length > 0 && (
+                    <button
+                      className="px-4 py-3 rounded-xl border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={() => exportSalaryCsv(records, PREFECTURE_NAMES)}
+                    >
+                      CSV出力({records.length}件)
+                    </button>
+                  )}
+                </div>
+                {saveMessage && <p className="text-sm text-green-700 mt-2">{saveMessage}</p>}
+                <p className="text-xs text-gray-400 mt-2">
+                  ※ 明細はこの端末(ブラウザ)内に保存されます。
+                </p>
+              </section>
+
               <p className="text-xs text-gray-400 leading-relaxed">
                 ※ 勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和7)年度の官方料率
                 (協会けんぽ都道府県別料率・介護保険・厚生年金・雇用保険(業種別)・子ども・子育て拠出金)を自動適用します。
@@ -400,6 +476,52 @@ export default function SalaryPage() {
             </section>
           )}
         </div>
+
+        {/* ==== 保存履歴 ==== */}
+        {records.length > 0 && (
+          <div className="lg:col-span-2">
+            <section className={cardCls}>
+              <h2 className="font-bold text-gray-800 mb-3 border-l-4 border-gray-500 pl-2">
+                保存済みの明細({records.length}件)
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm whitespace-nowrap">
+                  <thead>
+                    <tr className="text-left text-gray-500 border-b">
+                      <th className="py-2 pr-4">保存日時</th>
+                      <th className="py-2 pr-4">氏名</th>
+                      <th className="py-2 pr-4">勤務月</th>
+                      <th className="py-2 pr-4">支給月</th>
+                      <th className="py-2 pr-4 text-right">総支給額</th>
+                      <th className="py-2 pr-4 text-right">手取り</th>
+                      <th className="py-2 pr-4 text-right">会社負担</th>
+                      <th className="py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {records.map((r) => (
+                      <tr key={r.id} className="border-b last:border-b-0">
+                        <td className="py-2 pr-4 text-gray-500">
+                          {new Date(r.savedAt).toLocaleString("ja-JP", { dateStyle: "short", timeStyle: "short" })}
+                        </td>
+                        <td className="py-2 pr-4 font-medium">{r.input.name}</td>
+                        <td className="py-2 pr-4">{r.input.workYear}/{String(r.input.workMonth).padStart(2, "0")}</td>
+                        <td className="py-2 pr-4">{r.result.paymentYear}/{String(r.result.paymentMonth).padStart(2, "0")}</td>
+                        <td className="py-2 pr-4 text-right">{yen(r.input.grossSalary)}</td>
+                        <td className="py-2 pr-4 text-right font-medium text-green-700">{yen(r.result.netPay)}</td>
+                        <td className="py-2 pr-4 text-right">{yen(r.result.totalEmployerBurden)}</td>
+                        <td className="py-2 text-right">
+                          <button className="text-blue-700 hover:underline mr-3" onClick={() => handleLoad(r)}>読込</button>
+                          <button className="text-red-600 hover:underline" onClick={() => handleDelete(r.id)}>削除</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        )}
       </main>
     </div>
   );
