@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   loadSalaryRecords,
   saveSalaryRecord,
-  deleteSalaryRecord,
-  exportSalaryCsv,
   type SalaryRecord,
 } from "../lib/salaryStore";
 import { useRequireLogin } from "../lib/auth";
+import { loadPeople, type Person } from "../lib/peopleStore";
 import {
   PREFECTURE_NAMES,
   KENPO_MIN_YEAR,
@@ -50,9 +49,22 @@ export default function SalaryPage() {
 
   const [records, setRecords] = useState<SalaryRecord[]>([]);
   const [saveMessage, setSaveMessage] = useState("");
+  const [people, setPeople] = useState<Person[]>([]);
+  const [selectedPersonId, setSelectedPersonId] = useState("");
   useEffect(() => {
     setRecords(loadSalaryRecords());
+    setPeople(loadPeople());
   }, []);
+
+  function handleSelectPerson(id: string) {
+    setSelectedPersonId(id);
+    const p = people.find((x) => x.id === id);
+    if (p) {
+      setName(p.name);
+      setBirth(p.birth);
+      setPrefectureIndex(p.prefectureIndex);
+    }
+  }
 
   const currentInput = useMemo<PayrollInput | null>(() => {
     if (!birth || grossSalary <= 0) return null;
@@ -99,31 +111,6 @@ export default function SalaryPage() {
     setSaveMessage(`保存しました(${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分)`);
   }
 
-  function handleLoad(r: SalaryRecord) {
-    const i = r.input;
-    setName(i.name);
-    setBirth(i.birth);
-    setPrefectureIndex(i.prefectureIndex);
-    setIsExecutive(i.isExecutive);
-    setWorkYear(i.workYear);
-    setWorkMonth(i.workMonth);
-    setPaymentOffset(i.paymentOffset);
-    setGrossSalary(i.grossSalary);
-    setDependents(i.dependents);
-    setInsuranceType(i.insuranceType);
-    setKumiaiHealthMonthly(i.kumiaiHealthMonthly ?? 0);
-    setKumiaiKaigoMonthly(i.kumiaiKaigoMonthly ?? 0);
-    setKumiaiFee(i.kumiaiFee ?? 0);
-    setKoyoIndustry(i.koyoIndustry ?? "construction");
-    setRousaiRate(i.rousaiRate ?? ROUSAI_DEFAULT_RATE);
-    setSaveMessage("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function handleDelete(id: string) {
-    setRecords(deleteSalaryRecord(id));
-  }
-
   const labelCls = "block text-sm font-medium text-gray-700 mb-1";
   const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
   const cardCls = "bg-white rounded-2xl shadow p-5";
@@ -143,6 +130,39 @@ export default function SalaryPage() {
       <main className="max-w-5xl mx-auto px-4 mt-6 grid gap-6 lg:grid-cols-2">
         {/* ==== 入力フォーム ==== */}
         <div className="space-y-6">
+          <section className={cardCls}>
+            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">対象者の選択</h2>
+            {people.length === 0 ? (
+              <p className="text-sm text-gray-600">
+                登録済みの人員がいません。
+                <button className="text-blue-700 underline ml-1" onClick={() => router.push("/people")}>
+                  人員登録
+                </button>
+                で先に登録すると、ここから選ぶだけで氏名・生年月日・地域が自動入力されます。
+              </p>
+            ) : (
+              <>
+                <select
+                  className={inputCls}
+                  value={selectedPersonId}
+                  onChange={(e) => handleSelectPerson(e.target.value)}
+                >
+                  <option value="">選択してください(手動入力も可)</option>
+                  {people.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}{p.kana && `(${p.kana})`}
+                    </option>
+                  ))}
+                </select>
+                {selectedPersonId && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    氏名・生年月日・地域を自動入力しました。下で修正もできます。
+                  </p>
+                )}
+              </>
+            )}
+          </section>
+
           <section className={cardCls}>
             <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">基本情報</h2>
             <div className="grid grid-cols-2 gap-4">
@@ -452,18 +472,16 @@ export default function SalaryPage() {
                   >
                     この明細を保存
                   </button>
-                  {records.length > 0 && (
-                    <button
-                      className="px-4 py-3 rounded-xl border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => exportSalaryCsv(records, PREFECTURE_NAMES)}
-                    >
-                      CSV出力({records.length}件)
-                    </button>
-                  )}
+                  <button
+                    className="px-4 py-3 rounded-xl border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => router.push("/salary/records")}
+                  >
+                    明細一覧({records.length}件)
+                  </button>
                 </div>
                 {saveMessage && <p className="text-sm text-green-700 mt-2">{saveMessage}</p>}
                 <p className="text-xs text-gray-400 mt-2">
-                  ※ 明細はこの端末(ブラウザ)内に保存されます。
+                  ※ 明細はこの端末(ブラウザ)内に保存されます。保存した明細は「明細一覧」で確認できます。
                 </p>
               </section>
 
@@ -480,52 +498,6 @@ export default function SalaryPage() {
             </section>
           )}
         </div>
-
-        {/* ==== 保存履歴 ==== */}
-        {records.length > 0 && (
-          <div className="lg:col-span-2">
-            <section className={cardCls}>
-              <h2 className="font-bold text-gray-800 mb-3 border-l-4 border-gray-500 pl-2">
-                保存済みの明細({records.length}件)
-              </h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm whitespace-nowrap">
-                  <thead>
-                    <tr className="text-left text-gray-500 border-b">
-                      <th className="py-2 pr-4">保存日時</th>
-                      <th className="py-2 pr-4">氏名</th>
-                      <th className="py-2 pr-4">勤務月</th>
-                      <th className="py-2 pr-4">支給月</th>
-                      <th className="py-2 pr-4 text-right">総支給額</th>
-                      <th className="py-2 pr-4 text-right">手取り</th>
-                      <th className="py-2 pr-4 text-right">会社負担</th>
-                      <th className="py-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {records.map((r) => (
-                      <tr key={r.id} className="border-b last:border-b-0">
-                        <td className="py-2 pr-4 text-gray-500">
-                          {new Date(r.savedAt).toLocaleString("ja-JP", { dateStyle: "short", timeStyle: "short" })}
-                        </td>
-                        <td className="py-2 pr-4 font-medium">{r.input.name}</td>
-                        <td className="py-2 pr-4">{r.input.workYear}/{String(r.input.workMonth).padStart(2, "0")}</td>
-                        <td className="py-2 pr-4">{r.result.paymentYear}/{String(r.result.paymentMonth).padStart(2, "0")}</td>
-                        <td className="py-2 pr-4 text-right">{yen(r.input.grossSalary)}</td>
-                        <td className="py-2 pr-4 text-right font-medium text-green-700">{yen(r.result.netPay)}</td>
-                        <td className="py-2 pr-4 text-right">{yen(r.result.totalEmployerBurden)}</td>
-                        <td className="py-2 text-right">
-                          <button className="text-blue-700 hover:underline mr-3" onClick={() => handleLoad(r)}>読込</button>
-                          <button className="text-red-600 hover:underline" onClick={() => handleDelete(r.id)}>削除</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
-        )}
       </main>
     </div>
   );
