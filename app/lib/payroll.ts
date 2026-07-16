@@ -1,72 +1,24 @@
 /**
- * 日本給与計算ロジック(令和7年度基準)
+ * 日本給与計算ロジック(平成28年度〜令和7年度対応)
  *
- * 料率・税額計算式はすべてこのファイル冒頭の定数にまとめてある。
- * 年度更新の際はここだけ書き換えればよい。
+ * 年度別の料率・税額計算式は payrollRates.ts にまとめてある。
+ * 勤務月に応じて自動的にその年度の官方料率が適用され、
+ * 未登録の将来年度は最新年度の料率にフォールバックする。
  */
 
-// ============ 料率定数(令和7年度) ============
+import {
+  PREFECTURE_NAMES,
+  KENPO_HISTORY,
+  kenpoFiscalYear,
+  pensionRate,
+  koyoRates,
+  kodomoRate,
+  pensionSmrRange,
+  calcWithholdingTax,
+} from "./payrollRates";
 
-/** 協会けんぽ 都道府県別 健康保険料率(%)令和7年度 */
-export const PREFECTURES: { name: string; rate: number }[] = [
-  { name: "北海道", rate: 10.31 },
-  { name: "青森県", rate: 9.85 },
-  { name: "岩手県", rate: 9.62 },
-  { name: "宮城県", rate: 10.11 },
-  { name: "秋田県", rate: 10.01 },
-  { name: "山形県", rate: 9.75 },
-  { name: "福島県", rate: 9.62 },
-  { name: "茨城県", rate: 9.67 },
-  { name: "栃木県", rate: 9.82 },
-  { name: "群馬県", rate: 9.77 },
-  { name: "埼玉県", rate: 9.76 },
-  { name: "千葉県", rate: 9.79 },
-  { name: "東京都", rate: 9.91 },
-  { name: "神奈川県", rate: 9.92 },
-  { name: "新潟県", rate: 9.55 },
-  { name: "富山県", rate: 9.65 },
-  { name: "石川県", rate: 9.88 },
-  { name: "福井県", rate: 9.94 },
-  { name: "山梨県", rate: 9.89 },
-  { name: "長野県", rate: 9.69 },
-  { name: "岐阜県", rate: 9.93 },
-  { name: "静岡県", rate: 9.80 },
-  { name: "愛知県", rate: 10.03 },
-  { name: "三重県", rate: 9.99 },
-  { name: "滋賀県", rate: 9.97 },
-  { name: "京都府", rate: 10.03 },
-  { name: "大阪府", rate: 10.24 },
-  { name: "兵庫県", rate: 10.16 },
-  { name: "奈良県", rate: 10.02 },
-  { name: "和歌山県", rate: 10.19 },
-  { name: "鳥取県", rate: 9.93 },
-  { name: "島根県", rate: 9.94 },
-  { name: "岡山県", rate: 10.17 },
-  { name: "広島県", rate: 9.97 },
-  { name: "山口県", rate: 10.36 },
-  { name: "徳島県", rate: 10.47 },
-  { name: "香川県", rate: 10.21 },
-  { name: "愛媛県", rate: 10.18 },
-  { name: "高知県", rate: 10.13 },
-  { name: "福岡県", rate: 10.31 },
-  { name: "佐賀県", rate: 10.78 },
-  { name: "長崎県", rate: 10.41 },
-  { name: "熊本県", rate: 10.27 },
-  { name: "大分県", rate: 10.25 },
-  { name: "宮崎県", rate: 9.85 },
-  { name: "鹿児島県", rate: 10.31 },
-  { name: "沖縄県", rate: 9.44 },
-];
+export { PREFECTURE_NAMES, KENPO_HISTORY, KENPO_MIN_YEAR, KENPO_MAX_YEAR } from "./payrollRates";
 
-/** 介護保険料率(協会けんぽ・全国一律)% */
-export const KAIGO_RATE = 1.59;
-/** 厚生年金保険料率 % */
-export const PENSION_RATE = 18.3;
-/** 雇用保険料率(一般の事業)% */
-export const KOYO_EMPLOYEE_RATE = 0.55;
-export const KOYO_EMPLOYER_RATE = 0.9;
-/** 子ども・子育て拠出金率(会社のみ負担)% */
-export const KODOMO_RATE = 0.36;
 /** 労災保険料率デフォルト(その他の各種事業)% */
 export const ROUSAI_DEFAULT_RATE = 0.3;
 
@@ -136,10 +88,10 @@ export function healthSMR(monthlySalary: number): number {
   return smr;
 }
 
-/** 厚生年金の標準報酬月額(第1等級88,000円〜第32等級650,000円) */
-export function pensionSMR(monthlySalary: number): number {
-  const smr = healthSMR(monthlySalary);
-  return Math.min(Math.max(smr, 88000), 650000);
+/** 厚生年金の標準報酬月額(等級範囲は年月で変わる) */
+export function pensionSMR(monthlySalary: number, year: number, month: number): number {
+  const { min, max } = pensionSmrRange(year, month);
+  return Math.min(Math.max(healthSMR(monthlySalary), min), max);
 }
 
 // ============ 端数処理 ============
@@ -181,48 +133,6 @@ export function isHealthTarget(birth: Date, year: number, month: number): boolea
   return ym(year, month) < ym(b75.getFullYear(), b75.getMonth() + 1);
 }
 
-// ============ 源泉所得税(電算機計算の特例・令和7年分・甲欄) ============
-
-/**
- * 月額給与の源泉徴収所得税を計算する。
- * @param afterShakaiHoken 社会保険料等控除後の給与等の金額
- * @param dependents 扶養親族等の数
- */
-export function calcWithholdingTax(afterShakaiHoken: number, dependents: number): number {
-  const A = afterShakaiHoken;
-  if (A <= 0) return 0;
-
-  // 給与所得控除の月額(1円未満切上げ)
-  let B: number;
-  if (A <= 135416) B = 45834;
-  else if (A <= 149999) B = A * 0.4 - 8333;
-  else if (A <= 299999) B = A * 0.3 + 6667;
-  else if (A <= 549999) B = A * 0.2 + 36667;
-  else if (A <= 708330) B = A * 0.1 + 91667;
-  else B = 162500;
-  B = Math.ceil(B);
-
-  // 基礎控除の月額 + 扶養控除の月額
-  const C = 40000;
-  const D = 31667 * dependents;
-
-  const taxable = Math.max(0, A - B - C - D);
-  if (taxable <= 0) return 0;
-
-  // 税額の月割計算式(復興特別所得税込み)
-  let tax: number;
-  if (taxable <= 162500) tax = taxable * 0.05105;
-  else if (taxable <= 275000) tax = taxable * 0.1021 - 8296;
-  else if (taxable <= 579166) tax = taxable * 0.2042 - 36374;
-  else if (taxable <= 750000) tax = taxable * 0.23483 - 54113;
-  else if (taxable <= 1500000) tax = taxable * 0.33693 - 130688;
-  else if (taxable <= 3333333) tax = taxable * 0.4084 - 237893;
-  else tax = taxable * 0.45945 - 408061;
-
-  // 10円未満四捨五入
-  return Math.max(0, Math.round(tax / 10) * 10);
-}
-
 // ============ メイン計算 ============
 
 export interface PayrollInput {
@@ -245,12 +155,26 @@ export interface PayrollInput {
   rousaiRate: number; // 労災保険料率 %
 }
 
+/** 計算に実際に適用された料率(画面表示用) */
+export interface AppliedRates {
+  kenpoFiscalLabel: string; // 例: 令和6年度
+  kenpoFallback: boolean; // 未登録年度のため最新年度で代用したか
+  kenpoRate: number; // 健康保険料率(%)協会けんぽ時のみ意味を持つ
+  kaigoRate: number;
+  pensionRate: number;
+  koyoEmployeeRate: number;
+  koyoEmployerRate: number;
+  kodomoRate: number;
+  taxYear: number; // 所得税の適用年(支給年)
+}
+
 export interface PayrollResult {
   paymentYear: number;
   paymentMonth: number;
   healthSmr: number;
   pensionSmr: number;
   kaigoApplied: boolean;
+  applied: AppliedRates;
   // 本人負担
   healthEmployee: number;
   kaigoEmployee: number;
@@ -274,30 +198,40 @@ export interface PayrollResult {
 export function calcPayroll(input: PayrollInput): PayrollResult {
   const birth = new Date(input.birth + "T00:00:00");
   const gross = input.grossSalary;
+  const wy = input.workYear;
+  const wm = input.workMonth;
 
   // 支給月(勤務月 + オフセット)
-  const totalM = ym(input.workYear, input.workMonth) + input.paymentOffset;
+  const totalM = ym(wy, wm) + input.paymentOffset;
   const paymentYear = Math.floor(totalM / 12);
   const paymentMonth = (totalM % 12) + 1;
 
   const hSmr = healthSMR(gross);
-  const pSmr = pensionSMR(gross);
+  const pSmr = pensionSMR(gross, wy, wm);
+
+  // 勤務月に応じた年度別料率
+  const { fy, isFallback } = kenpoFiscalYear(wy, wm);
+  const kenpoYear = KENPO_HISTORY[fy];
+  const kenpoRateP = kenpoYear.rates[input.prefectureIndex];
+  const kaigoRateP = kenpoYear.kaigo;
+  const pensionRateP = pensionRate(wy, wm);
+  const koyo = koyoRates(wy, wm);
+  const kodomoRateP = kodomoRate(wy, wm);
 
   // 保険料の対象月は勤務月で判定
-  const healthOk = isHealthTarget(birth, input.workYear, input.workMonth);
-  const kaigoOk = healthOk && isKaigoTarget(birth, input.workYear, input.workMonth);
-  const pensionOk = isPensionTarget(birth, input.workYear, input.workMonth);
+  const healthOk = isHealthTarget(birth, wy, wm);
+  const kaigoOk = healthOk && isKaigoTarget(birth, wy, wm);
+  const pensionOk = isPensionTarget(birth, wy, wm);
 
   // ---- 健康保険・介護保険 ----
   let healthEmployee = 0, healthEmployer = 0, kaigoEmployee = 0, kaigoEmployer = 0;
   if (healthOk) {
     if (input.insuranceType === "kyokai") {
-      const rate = PREFECTURES[input.prefectureIndex].rate / 100;
-      const total = hSmr * rate;
+      const total = hSmr * (kenpoRateP / 100);
       healthEmployee = roundEmployeeShare(total / 2);
       healthEmployer = Math.round(total) - healthEmployee;
       if (kaigoOk) {
-        const kTotal = hSmr * (KAIGO_RATE / 100);
+        const kTotal = hSmr * (kaigoRateP / 100);
         kaigoEmployee = roundEmployeeShare(kTotal / 2);
         kaigoEmployer = Math.round(kTotal) - kaigoEmployee;
       }
@@ -315,7 +249,7 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   // ---- 厚生年金 ----
   let pensionEmployee = 0, pensionEmployer = 0;
   if (pensionOk) {
-    const total = pSmr * (PENSION_RATE / 100);
+    const total = pSmr * (pensionRateP / 100);
     pensionEmployee = roundEmployeeShare(total / 2);
     pensionEmployer = Math.round(total) - pensionEmployee;
   }
@@ -323,17 +257,17 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   // ---- 雇用保険・労災(役員は対象外) ----
   let koyoEmployee = 0, koyoEmployer = 0, rousai = 0;
   if (!input.isExecutive) {
-    koyoEmployee = roundEmployeeShare(gross * (KOYO_EMPLOYEE_RATE / 100));
-    koyoEmployer = Math.round(gross * (KOYO_EMPLOYER_RATE / 100));
+    koyoEmployee = roundEmployeeShare(gross * (koyo.employee / 100));
+    koyoEmployer = Math.round(gross * (koyo.employer / 100));
     rousai = Math.round(gross * (input.rousaiRate / 100));
   }
 
-  // ---- 子ども・子育て拠出金(厚生年金の標準報酬月額 × 0.36%・会社のみ) ----
-  const kodomoContribution = pensionOk ? Math.round(pSmr * (KODOMO_RATE / 100)) : 0;
+  // ---- 子ども・子育て拠出金(厚生年金の標準報酬月額 × 率・会社のみ) ----
+  const kodomoContribution = pensionOk ? Math.round(pSmr * (kodomoRateP / 100)) : 0;
 
-  // ---- 源泉所得税 ----
+  // ---- 源泉所得税(支給日の属する年の計算式を適用) ----
   const shakaiHoken = healthEmployee + kaigoEmployee + pensionEmployee + koyoEmployee;
-  const incomeTax = calcWithholdingTax(gross - shakaiHoken, input.dependents);
+  const incomeTax = calcWithholdingTax(gross - shakaiHoken, input.dependents, paymentYear);
 
   const kumiaiFee = input.insuranceType === "kumiai" ? Math.round(input.kumiaiFee || 0) : 0;
 
@@ -349,6 +283,17 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
     healthSmr: hSmr,
     pensionSmr: pSmr,
     kaigoApplied: kaigoOk,
+    applied: {
+      kenpoFiscalLabel: kenpoYear.label,
+      kenpoFallback: isFallback,
+      kenpoRate: kenpoRateP,
+      kaigoRate: kaigoRateP,
+      pensionRate: pensionRateP,
+      koyoEmployeeRate: koyo.employee,
+      koyoEmployerRate: koyo.employer,
+      kodomoRate: kodomoRateP,
+      taxYear: paymentYear,
+    },
     healthEmployee,
     kaigoEmployee,
     pensionEmployee,
