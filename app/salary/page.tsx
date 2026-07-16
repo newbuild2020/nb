@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   loadSalaryRecords,
@@ -103,8 +103,12 @@ export default function SalaryPage() {
   // 在職の人員のみ選択可能(退職者は除外)
   const activePeople = people.filter((p) => p.status === "active");
 
+  const [depAutoNote, setDepAutoNote] = useState("");
+  const depManualRef = useRef(false);
+
   function handleSelectPerson(id: string) {
     setSelectedPersonId(id);
+    depManualRef.current = false; // 扶養人数を再び自動追従させる
     const p = people.find((x) => x.id === id);
     if (p) {
       setName(p.name);
@@ -113,6 +117,39 @@ export default function SalaryPage() {
       setIsExecutive(p.role === "executive");
     }
   }
+
+  /** その人の「対象月より前」で最も新しい明細の扶養人数を探す */
+  function findPrevDependents(personId: string, wy: number, wm: number): number | null {
+    const p = people.find((x) => x.id === personId);
+    if (!p) return null;
+    const target = wy * 12 + (wm - 1);
+    let best: { ym: number; dep: number } | null = null;
+    for (const r of records) {
+      const match =
+        (r.person && r.person.code === p.code) ||
+        (r.input.name === p.name && r.input.birth === p.birth);
+      if (!match) continue;
+      const ym = r.input.workYear * 12 + (r.input.workMonth - 1);
+      if (ym >= target) continue;
+      if (!best || ym > best.ym) best = { ym, dep: r.input.dependents };
+    }
+    return best ? best.dep : null;
+  }
+
+  // 人員選択時・勤務月変更時: 前月(以前)の明細から扶養人数を自動入力。
+  // 手動で修正した後は上書きしない。
+  useEffect(() => {
+    if (!selectedPersonId || editingId || depManualRef.current) return;
+    const dep = findPrevDependents(selectedPersonId, workYear, workMonth);
+    if (dep !== null) {
+      setDependentsStr(String(dep));
+      setDepAutoNote(`前月までの明細から扶養親族等の数「${dep}人」を自動入力しました。`);
+    } else {
+      setDependentsStr("0");
+      setDepAutoNote("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPersonId, workYear, workMonth, records, people]);
 
   /** 選択中の人員から明細用スナップショット(対象月時点の情報)を作る */
   function buildSnapshot(): PersonSnapshot | undefined {
@@ -287,8 +324,13 @@ export default function SalaryPage() {
                 <input
                   type="number" min={0} max={10} className={inputCls} placeholder="0"
                   value={dependentsStr}
-                  onChange={(e) => setDependentsStr(e.target.value)}
+                  onChange={(e) => {
+                    setDependentsStr(e.target.value);
+                    depManualRef.current = true;
+                    setDepAutoNote("");
+                  }}
                 />
+                {depAutoNote && <p className="text-xs text-green-700 mt-1">{depAutoNote}</p>}
               </div>
             </div>
             {isExecutive && (
