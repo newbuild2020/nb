@@ -40,6 +40,15 @@ export function saveSalaryRecord(input: PayrollInput, result: PayrollResult): Sa
   return record;
 }
 
+/** 既存明細を上書き更新する(idは保持、保存日時は更新) */
+export function updateSalaryRecord(id: string, input: PayrollInput, result: PayrollResult): SalaryRecord[] {
+  const list = loadSalaryRecords().map((r) =>
+    r.id === id ? { ...r, input, result, savedAt: new Date().toISOString() } : r
+  );
+  localStorage.setItem(KEY, JSON.stringify(list));
+  return list;
+}
+
 export function deleteSalaryRecord(id: string): SalaryRecord[] {
   const list = loadSalaryRecords().filter((r) => r.id !== id);
   localStorage.setItem(KEY, JSON.stringify(list));

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   loadSalaryRecords,
   saveSalaryRecord,
+  updateSalaryRecord,
   type SalaryRecord,
 } from "../lib/salaryStore";
 import { useRequireLogin } from "../lib/auth";
@@ -47,13 +48,45 @@ export default function SalaryPage() {
   const [koyoIndustry, setKoyoIndustry] = useState<KoyoIndustry>("construction");
   const [rousaiRate, setRousaiRate] = useState(ROUSAI_DEFAULT_RATE);
 
+  const [incomeTaxOverride, setIncomeTaxOverride] = useState<number | null>(null);
   const [records, setRecords] = useState<SalaryRecord[]>([]);
   const [saveMessage, setSaveMessage] = useState("");
   const [people, setPeople] = useState<Person[]>([]);
   const [selectedPersonId, setSelectedPersonId] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingLabel, setEditingLabel] = useState("");
+
   useEffect(() => {
-    setRecords(loadSalaryRecords());
+    const loaded = loadSalaryRecords();
+    setRecords(loaded);
     setPeople(loadPeople());
+    // 明細一覧の「編集」から遷移してきた場合、対象明細を読み込む
+    const editId = sessionStorage.getItem("salaryEditRecordId");
+    if (editId) {
+      sessionStorage.removeItem("salaryEditRecordId");
+      const r = loaded.find((x) => x.id === editId);
+      if (r) {
+        const i = r.input;
+        setName(i.name);
+        setBirth(i.birth);
+        setPrefectureIndex(i.prefectureIndex);
+        setIsExecutive(i.isExecutive);
+        setWorkYear(i.workYear);
+        setWorkMonth(i.workMonth);
+        setPaymentOffset(i.paymentOffset);
+        setGrossSalary(i.grossSalary);
+        setDependents(i.dependents);
+        setInsuranceType(i.insuranceType);
+        setKumiaiHealthMonthly(i.kumiaiHealthMonthly ?? 0);
+        setKumiaiKaigoMonthly(i.kumiaiKaigoMonthly ?? 0);
+        setKumiaiFee(i.kumiaiFee ?? 0);
+        setKoyoIndustry(i.koyoIndustry ?? "construction");
+        setRousaiRate(i.rousaiRate ?? ROUSAI_DEFAULT_RATE);
+        setIncomeTaxOverride(i.incomeTaxOverride ?? null);
+        setEditingId(r.id);
+        setEditingLabel(`${i.name} / ${r.result.paymentYear}年${r.result.paymentMonth}月支給分`);
+      }
+    }
   }, []);
 
   function handleSelectPerson(id: string) {
@@ -84,11 +117,12 @@ export default function SalaryPage() {
       kumiaiFee,
       koyoIndustry,
       rousaiRate,
+      incomeTaxOverride,
     };
   }, [
     name, birth, prefectureIndex, isExecutive, workYear, workMonth, paymentOffset,
     grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiKaigoMonthly, kumiaiFee,
-    koyoIndustry, rousaiRate,
+    koyoIndustry, rousaiRate, incomeTaxOverride,
   ]);
 
   const result = useMemo(() => {
@@ -106,9 +140,20 @@ export default function SalaryPage() {
       setSaveMessage("氏名を入力してから保存してください。");
       return;
     }
-    saveSalaryRecord(currentInput, result);
-    setRecords(loadSalaryRecords());
-    setSaveMessage(`保存しました(${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分)`);
+    if (editingId) {
+      setRecords(updateSalaryRecord(editingId, currentInput, result));
+      setSaveMessage(`更新しました(${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分)`);
+    } else {
+      saveSalaryRecord(currentInput, result);
+      setRecords(loadSalaryRecords());
+      setSaveMessage(`保存しました(${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分)`);
+    }
+  }
+
+  function stopEditing() {
+    setEditingId(null);
+    setEditingLabel("");
+    setSaveMessage("");
   }
 
   const labelCls = "block text-sm font-medium text-gray-700 mb-1";
@@ -130,6 +175,15 @@ export default function SalaryPage() {
       <main className="max-w-5xl mx-auto px-4 mt-6 grid gap-6 lg:grid-cols-2">
         {/* ==== 入力フォーム ==== */}
         <div className="space-y-6">
+          {editingId && (
+            <div className="bg-blue-50 border border-blue-300 text-blue-900 rounded-xl px-4 py-3 text-sm flex items-center justify-between gap-3">
+              <span>✎ 編集中: {editingLabel}</span>
+              <button className="text-blue-700 underline whitespace-nowrap" onClick={stopEditing}>
+                編集をやめて新規作成
+              </button>
+            </div>
+          )}
+
           <section className={cardCls}>
             <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">対象者の選択</h2>
             {people.length === 0 ? (
@@ -399,8 +453,34 @@ export default function SalaryPage() {
                       <td className="py-2 text-right text-red-600">-{yen(result.koyoEmployee)}</td>
                     </tr>
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">源泉所得税</td>
-                      <td className="py-2 text-right text-red-600">-{yen(result.incomeTax)}</td>
+                      <td className="py-2 text-gray-600">
+                        源泉所得税
+                        {incomeTaxOverride !== null ? (
+                          <>
+                            <span className="ml-1 text-xs text-amber-600">(手動)</span>
+                            <button
+                              className="ml-2 text-xs text-blue-700 underline"
+                              onClick={() => setIncomeTaxOverride(null)}
+                            >
+                              自動計算に戻す
+                            </button>
+                          </>
+                        ) : (
+                          <span className="ml-1 text-xs text-gray-400">(修正可)</span>
+                        )}
+                      </td>
+                      <td className="py-2 text-right text-red-600 whitespace-nowrap">
+                        -
+                        <input
+                          type="number"
+                          min={0}
+                          step={10}
+                          className="w-28 text-right border border-gray-300 rounded px-2 py-1 text-red-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={result.incomeTax}
+                          onChange={(e) => setIncomeTaxOverride(Math.max(0, Number(e.target.value) || 0))}
+                        />
+                        {" 円"}
+                      </td>
                     </tr>
                     {insuranceType === "kumiai" && (
                       <tr className="border-b">
@@ -470,7 +550,7 @@ export default function SalaryPage() {
                     className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-bold hover:bg-blue-800 transition-colors"
                     onClick={handleSave}
                   >
-                    この明細を保存
+                    {editingId ? "更新して保存" : "この明細を保存"}
                   </button>
                   <button
                     className="px-4 py-3 rounded-xl border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"

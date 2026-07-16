@@ -168,6 +168,11 @@ export interface PayrollInput {
   kumiaiFee: number; // 組合費(本人給与から控除・円/月)
   koyoIndustry: KoyoIndustry; // 雇用保険の業種区分
   rousaiRate: number; // 労災保険料率 %
+  /**
+   * 源泉所得税の手動指定(円)。null/未指定なら自動計算。
+   * 端数調整や特殊な控除を反映したいときに使う。
+   */
+  incomeTaxOverride?: number | null;
 }
 
 /** 計算に実際に適用された料率(画面表示用) */
@@ -280,9 +285,12 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   // ---- 子ども・子育て拠出金(厚生年金の標準報酬月額 × 率・会社のみ) ----
   const kodomoContribution = pensionOk ? Math.round(pSmr * (kodomoRateP / 100)) : 0;
 
-  // ---- 源泉所得税(支給日の属する年の計算式を適用) ----
+  // ---- 源泉所得税(支給日の属する年の計算式を適用。手動指定があれば優先) ----
   const shakaiHoken = healthEmployee + kaigoEmployee + pensionEmployee + koyoEmployee;
-  const incomeTax = calcWithholdingTax(gross - shakaiHoken, input.dependents, paymentYear);
+  const incomeTax =
+    input.incomeTaxOverride != null
+      ? Math.max(0, Math.round(input.incomeTaxOverride))
+      : calcWithholdingTax(gross - shakaiHoken, input.dependents, paymentYear);
 
   const kumiaiFee = input.insuranceType === "kumiai" ? Math.round(input.kumiaiFee || 0) : 0;
 

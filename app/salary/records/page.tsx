@@ -107,6 +107,15 @@ export default function SalaryRecordsPage() {
                         >
                           {openId === r.id ? "閉じる" : "詳細"}
                         </button>
+                        <button
+                          className="text-blue-700 hover:underline mr-3"
+                          onClick={() => {
+                            sessionStorage.setItem("salaryEditRecordId", r.id);
+                            router.push("/salary");
+                          }}
+                        >
+                          編集
+                        </button>
                         <button className="text-red-600 hover:underline" onClick={() => handleDelete(r)}>削除</button>
                       </td>
                     </tr>
