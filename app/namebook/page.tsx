@@ -2,6 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useRequireLogin } from "../lib/auth";
 
 const COMPANY_NAME = "株式会社ニュービルド";
 const SITE_NAME = "人员管理系统";
@@ -27,6 +28,7 @@ interface UserInfo {
 export default function NamebookPage() {
   const [lang, setLang] = useState<'zh' | 'ja'>("zh");
   const router = useRouter();
+  const authed = useRequireLogin();
 
   useEffect(() => {
     const savedLang = localStorage.getItem("lang");
@@ -121,6 +123,8 @@ export default function NamebookPage() {
     setUserLoginPass("");
     setUserLoginError("");
   }
+
+  if (!authed) return null;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#f5f5f7] dark:bg-black text-[#1d1d1f] dark:text-white relative">

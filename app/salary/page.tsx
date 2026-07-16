@@ -9,6 +9,7 @@ import {
   exportSalaryCsv,
   type SalaryRecord,
 } from "../lib/salaryStore";
+import { useRequireLogin } from "../lib/auth";
 import {
   PREFECTURE_NAMES,
   KENPO_MIN_YEAR,
@@ -28,6 +29,7 @@ function yen(n: number): string {
 
 export default function SalaryPage() {
   const router = useRouter();
+  const authed = useRequireLogin();
   const now = new Date();
 
   const [name, setName] = useState("");
@@ -125,6 +127,8 @@ export default function SalaryPage() {
   const labelCls = "block text-sm font-medium text-gray-700 mb-1";
   const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
   const cardCls = "bg-white rounded-2xl shadow p-5";
+
+  if (!authed) return null; // 未ログインはホームへリダイレクト(useRequireLogin)
 
   return (
     <div className="min-h-screen bg-gray-100 pb-10">

@@ -2,6 +2,7 @@
 "use client";
 import React, { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useRequireLogin } from "../../lib/auth";
 import Link from "next/link";
 
 // 日期处理函数
@@ -188,6 +189,7 @@ function getBloodPressureStatus(sbp: string, dbp: string, lang: 'zh' | 'ja') {
 }
 
 export default function Register() {
+  const authedGuard = useRequireLogin();
   const [lang, setLang] = useState<'zh' | 'ja'>("zh");
   const [form, setForm] = useState<RegisterForm>({
     firstName: "",
@@ -654,6 +656,8 @@ export default function Register() {
   function validateDate8(date: string) {
     return /^\d{4}-\d{2}-\d{2}$/.test(date) && !isNaN(new Date(date).getTime());
   }
+
+  if (!authedGuard) return null; // 未登录跳回首页(useRequireLogin)
 
   // 成功页
   if (registerSuccess) {
