@@ -327,7 +327,7 @@ export default function SalaryPage() {
               <p className="text-sm text-gray-600">
                 {PREFECTURE_NAMES[prefectureIndex]} の協会けんぽ料率
                 {result && `(${result.applied.kenpoFiscalLabel}: 健保 ${result.applied.kenpoRate}%・介護 ${result.applied.kaigoRate}%)`}
-                を労使折半で計算します。勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和7)年度の官方料率を自動適用します。
+                を労使折半で計算します。勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和7)年度の公式料率を自動適用します。
               </p>
             ) : (
               <div className="space-y-4">
@@ -566,10 +566,10 @@ export default function SalaryPage() {
               </section>
 
               <p className="text-xs text-gray-400 leading-relaxed">
-                ※ 勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和7)年度の官方料率
+                ※ 勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和7)年度の公式料率
                 (協会けんぽ都道府県別料率・介護保険・厚生年金・雇用保険(業種別)・子ども・子育て拠出金)を自動適用します。
                 源泉所得税は支給年の電算機計算の特例(甲欄)により計算しています。
-                住民税・通勤手当の非課税処理などは含みません。実際の給与計算では官方料額表もあわせてご確認ください。
+                住民税・通勤手当の非課税処理などは含みません。実際の給与計算では公式の保険料額表もあわせてご確認ください。
               </p>
             </>
           ) : (
