@@ -323,10 +323,16 @@ export default function SalaryPage() {
     <div className="min-h-screen bg-gray-100 pb-10">
       {/* ヘッダー */}
       <header className="bg-blue-800 text-white px-4 py-4 flex items-center gap-3 sticky top-0 z-10 shadow">
-        <button onClick={() => router.push("/")} className="text-white text-2xl leading-none" aria-label="戻る">
+        {/* 編集中は元の明細一覧(表示状態を保持)へ、通常はホームへ戻る */}
+        <button
+          onClick={() => router.push(editingId ? "/salary/records" : "/")}
+          className="text-white text-2xl leading-none"
+          aria-label="戻る"
+        >
           ←
         </button>
         <h1 className="text-lg font-bold">給料計算(給与・社会保険・所得税)</h1>
+        {editingId && <span className="ml-auto text-xs text-blue-200 whitespace-nowrap">←で一覧へ戻る</span>}
       </header>
 
       <main className="max-w-6xl mx-auto px-4 mt-6 grid gap-6 md:grid-cols-2 pb-24 md:pb-0">

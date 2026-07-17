@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PREFECTURE_NAMES } from "../../lib/payroll";
 import { useRequireLogin } from "../../lib/auth";
@@ -21,6 +21,9 @@ function yen(n: number): string {
 }
 
 type GroupMode = "month" | "year" | "person";
+
+/** 編集ページとの往復で表示状態を保持する sessionStorage キー */
+const VIEW_STATE_KEY = "recordsViewState";
 
 const GROUP_LABELS: Record<GroupMode, string> = {
   month: "月ごと",
@@ -52,10 +55,32 @@ export default function SalaryRecordsPage() {
   const [filterName, setFilterName] = useState("");
   // 既定は全グループ折りたたみ。展開したものだけ true を持つ
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  // 「編集」から戻ってきたときに復元するスクロール位置
+  const restoreScrollRef = useRef<number | null>(null);
 
   useEffect(() => {
     setRecords(loadSalaryRecords());
     syncSalaryRecords().then((list) => { if (list) setRecords(list); });
+    // 編集画面へ移動する前に保存した表示状態(絞り込み・グループ・展開・
+    // スクロール位置)があれば復元する(編集の保存後/戻るの両方)
+    try {
+      const raw = sessionStorage.getItem(VIEW_STATE_KEY);
+      if (raw) {
+        sessionStorage.removeItem(VIEW_STATE_KEY);
+        const s = JSON.parse(raw) as {
+          groupMode?: GroupMode; filterFrom?: string; filterTo?: string;
+          filterName?: string; expanded?: Record<string, boolean>;
+          openId?: string | null; scrollY?: number;
+        };
+        if (s.groupMode) setGroupMode(s.groupMode);
+        setFilterFrom(s.filterFrom ?? "");
+        setFilterTo(s.filterTo ?? "");
+        setFilterName(s.filterName ?? "");
+        setExpanded(s.expanded ?? {});
+        setOpenId(s.openId ?? null);
+        if (typeof s.scrollY === "number") restoreScrollRef.current = s.scrollY;
+      }
+    } catch { /* 復元失敗時は既定表示のまま */ }
   }, []);
 
   function handleDelete(r: SalaryRecord) {
@@ -120,6 +145,26 @@ export default function SalaryRecordsPage() {
     }
     return arr;
   }, [filtered, groupMode]);
+
+  // 復元対象のグループ描画が終わってからスクロール位置を戻す
+  useEffect(() => {
+    if (restoreScrollRef.current === null || groups.length === 0) return;
+    const y = restoreScrollRef.current;
+    restoreScrollRef.current = null;
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }, [groups]);
+
+  /** 編集ページへ移動(現在の表示状態を保存してから) */
+  function goEdit(r: SalaryRecord) {
+    try {
+      sessionStorage.setItem(VIEW_STATE_KEY, JSON.stringify({
+        groupMode, filterFrom, filterTo, filterName, expanded, openId,
+        scrollY: window.scrollY,
+      }));
+    } catch { /* 保存できなくても遷移は続行 */ }
+    sessionStorage.setItem("salaryEditRecordId", r.id);
+    router.push("/salary");
+  }
 
   const cardCls = "bg-white rounded-2xl shadow p-5";
   const filteredCount = filtered.length;
@@ -282,7 +327,7 @@ export default function SalaryRecordsPage() {
                               </button>
                               <button
                                 className="text-blue-700 hover:underline mr-3"
-                                onClick={() => { sessionStorage.setItem("salaryEditRecordId", r.id); router.push("/salary"); }}
+                                onClick={() => goEdit(r)}
                               >
                                 編集
                               </button>
