@@ -31,6 +31,11 @@ const GROUP_LABELS: Record<GroupMode, string> = {
   person: "人ごと",
 };
 
+/** グループ内の項目合計 */
+function groupSum(items: SalaryRecord[], pick: (r: SalaryRecord) => number): number {
+  return items.reduce((sum, r) => sum + pick(r), 0);
+}
+
 /** 勤務月を通算キーに */
 function workKey(r: SalaryRecord): number {
   return r.input.workYear * 12 + (r.input.workMonth - 1);
@@ -215,7 +220,7 @@ export default function SalaryRecordsPage() {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">氏名・管理番号で検索</label>
-              <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white min-h-[2.625rem]"
                 placeholder="例: 王鑫 / NB-01"
                 value={filterName} onChange={(e) => setFilterName(e.target.value)} />
             </div>
@@ -305,6 +310,16 @@ export default function SalaryRecordsPage() {
                           <th className="py-2 pr-4">勤務月</th>
                           <th className="py-2 pr-4">支給日</th>
                           <th className="py-2 pr-4 text-right">総支給額</th>
+                          <th className="py-2 pr-4 text-right">健康保険料</th>
+                          <th className="py-2 pr-4 text-right">介護保険料</th>
+                          <th className="py-2 pr-4 text-right">厚生年金保険料</th>
+                          <th className="py-2 pr-4 text-right">雇用保険料</th>
+                          <th className="py-2 pr-4 text-right">源泉所得税</th>
+                          <th className="py-2 pr-4 text-right">組合費</th>
+                          <th className="py-2 pr-4 text-right">県連共済費</th>
+                          <th className="py-2 pr-4 text-right">子ども・子育て支援金</th>
+                          <th className="py-2 pr-4 text-right">年末調整 還付</th>
+                          <th className="py-2 pr-4 text-right">年末調整 徴収</th>
                           <th className="py-2 pr-4 text-right">手取り</th>
                           <th className="py-2 pr-4 text-right">コスト</th>
                           <th className="py-2"></th>
@@ -312,7 +327,7 @@ export default function SalaryRecordsPage() {
                       </thead>
                       <tbody>
                         {g.items.map((r) => (
-                          <tr key={r.id} className="border-b last:border-b-0 align-top">
+                          <tr key={r.id} className="border-b align-top">
                             <td className="py-2 pr-4 font-mono">{r.person?.code ?? "-"}</td>
                             <td className="py-2 pr-4 font-medium">{r.input.name}</td>
                             <td className="py-2 pr-4">{r.input.workYear}/{String(r.input.workMonth).padStart(2, "0")}</td>
@@ -321,6 +336,16 @@ export default function SalaryRecordsPage() {
                               {r.result.paymentDay ? `/${String(r.result.paymentDay).padStart(2, "0")}` : ""}
                             </td>
                             <td className="py-2 pr-4 text-right">{yen(r.input.grossSalary)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.healthEmployee)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.kaigoEmployee)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.pensionEmployee)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.koyoEmployee)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.incomeTax)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.kumiaiFee)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.kenrenKyosai ?? 0)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.shienkinEmployee ?? 0)}</td>
+                            <td className="py-2 pr-4 text-right text-green-700">{yen(r.result.nenmatsuRefund ?? 0)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.nenmatsuCollect ?? 0)}</td>
                             <td className="py-2 pr-4 text-right font-medium text-green-700">{yen(r.result.netPay)}</td>
                             <td className="py-2 pr-4 text-right">{yen(recordCost(r))}</td>
                             <td className="py-2 text-right">
@@ -338,6 +363,26 @@ export default function SalaryRecordsPage() {
                           </tr>
                         ))}
                       </tbody>
+                      {/* グループ合計(絞り込み・並び替え後の表示対象の合計) */}
+                      <tfoot>
+                        <tr className="font-bold text-gray-800 border-t-2 border-gray-300">
+                          <td className="py-2 pr-4" colSpan={4}>合計({g.items.length}件)</td>
+                          <td className="py-2 pr-4 text-right">{yen(groupSum(g.items, (r) => r.input.grossSalary))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.healthEmployee))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.kaigoEmployee))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.pensionEmployee))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.koyoEmployee))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.incomeTax))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.kumiaiFee))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.kenrenKyosai ?? 0))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.shienkinEmployee ?? 0))}</td>
+                          <td className="py-2 pr-4 text-right text-green-700">{yen(groupSum(g.items, (r) => r.result.nenmatsuRefund ?? 0))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.nenmatsuCollect ?? 0))}</td>
+                          <td className="py-2 pr-4 text-right text-green-700">{yen(groupSum(g.items, (r) => r.result.netPay))}</td>
+                          <td className="py-2 pr-4 text-right">{yen(groupSum(g.items, recordCost))}</td>
+                          <td className="py-2"></td>
+                        </tr>
+                      </tfoot>
                     </table>
                   </div>
                 )}

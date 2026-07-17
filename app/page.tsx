@@ -117,7 +117,7 @@ export default function Home() {
               <div>
                 <label className="block text-sm text-gray-600 mb-1">アカウント</label>
                 <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={user}
                   autoComplete="username"
                   onChange={(e) => { setUser(e.target.value); setLoginError(""); }}
@@ -128,7 +128,7 @@ export default function Home() {
                 <label className="block text-sm text-gray-600 mb-1">パスワード</label>
                 <input
                   type="password"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={pass}
                   autoComplete="current-password"
                   onChange={(e) => { setPass(e.target.value); setLoginError(""); }}

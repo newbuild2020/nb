@@ -33,6 +33,11 @@ input[type="month"] {
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  height: 2.625rem; /* 他の入力欄(py-2 + text-base = 42px)と完全に同じ高さ */
+}
+
+/* セレクトもテキスト入力と同じ42pxに統一(UA既定では39pxになる) */
+select {
   min-height: 2.625rem;
 }
 input[type="date"]::-webkit-date-and-time-value,
