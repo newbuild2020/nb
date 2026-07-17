@@ -19,3 +19,16 @@ export function setCompanyPrefecture(index: number): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(KEY, String(index));
 }
+
+const ROUSAI_KEY = "rousaiCategoryKey";
+
+/** 労災保険の事業の種類(会社設定)。既定は建築事業 */
+export function getRousaiCategoryKey(): string {
+  if (typeof window === "undefined") return "kenchiku";
+  return localStorage.getItem(ROUSAI_KEY) || "kenchiku";
+}
+
+export function setRousaiCategoryKey(key: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(ROUSAI_KEY, key);
+}

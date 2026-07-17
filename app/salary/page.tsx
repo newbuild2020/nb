@@ -12,14 +12,16 @@ import {
 import { useRequireLogin } from "../lib/auth";
 import { loadPeople, type Person } from "../lib/peopleStore";
 import { syncPeople, syncSalaryRecords } from "../lib/cloudSync";
-import { getCompanyPrefecture, setCompanyPrefecture } from "../lib/settingsStore";
+import { getCompanyPrefecture, setCompanyPrefecture, getRousaiCategoryKey, setRousaiCategoryKey } from "../lib/settingsStore";
 import { WEEKDAY_JA } from "../lib/jpHolidays";
 import {
   PREFECTURE_NAMES,
   KENPO_MIN_YEAR,
   KENPO_MAX_YEAR,
   KOYO_INDUSTRY_LABELS,
-  ROUSAI_DEFAULT_RATE,
+  ROUSAI_CATEGORIES,
+  ROUSAI_DEFAULT_KEY,
+  rousaiKeyFromRate,
   calcPayroll,
   type PayrollInput,
   type KoyoIndustry,
@@ -52,7 +54,7 @@ export default function SalaryPage() {
   const [kumiaiFeeStr, setKumiaiFeeStr] = useState("");
   const [kenrenKyosaiStr, setKenrenKyosaiStr] = useState("");
   const [koyoIndustry, setKoyoIndustry] = useState<KoyoIndustry>("construction");
-  const [rousaiRateStr, setRousaiRateStr] = useState(String(ROUSAI_DEFAULT_RATE));
+  const [rousaiKey, setRousaiKey] = useState<string>(ROUSAI_DEFAULT_KEY);
 
   const [incomeTaxOverride, setIncomeTaxOverride] = useState<number | null>(null);
   const [taxOverrideStr, setTaxOverrideStr] = useState("");
@@ -66,7 +68,8 @@ export default function SalaryPage() {
   const kumiaiKaigoMonthly = Math.max(0, Number(kumiaiKaigoStr) || 0);
   const kumiaiFee = Math.max(0, Number(kumiaiFeeStr) || 0);
   const kenrenKyosai = Math.max(0, Number(kenrenKyosaiStr) || 0);
-  const rousaiRate = Math.max(0, Number(rousaiRateStr) || 0);
+  // 労災保険率は公式の事業の種類から自動決定(手入力なし)
+  const rousaiRate = ROUSAI_CATEGORIES.find((c) => c.key === rousaiKey)?.rate ?? 0.95;
   const nenmatsuRefund = Math.max(0, Number(nenmatsuRefundStr) || 0);
   const nenmatsuCollect = Math.max(0, Number(nenmatsuCollectStr) || 0);
   const [records, setRecords] = useState<SalaryRecord[]>([]);
@@ -78,6 +81,7 @@ export default function SalaryPage() {
 
   useEffect(() => {
     setPrefectureIndex(getCompanyPrefecture());
+    setRousaiKey(getRousaiCategoryKey());
     const loaded = loadSalaryRecords();
     setRecords(loaded);
     setPeople(loadPeople());
@@ -106,7 +110,7 @@ export default function SalaryPage() {
         setKumiaiFeeStr(i.kumiaiFee ? String(i.kumiaiFee) : "");
         setKenrenKyosaiStr(i.kenrenKyosai ? String(i.kenrenKyosai) : "");
         setKoyoIndustry(i.koyoIndustry ?? "construction");
-        setRousaiRateStr(String(i.rousaiRate ?? ROUSAI_DEFAULT_RATE));
+        setRousaiKey(rousaiKeyFromRate(i.rousaiRate ?? 0.95));
         setIncomeTaxOverride(i.incomeTaxOverride ?? null);
         setTaxOverrideStr(i.incomeTaxOverride != null ? String(i.incomeTaxOverride) : "");
         setNenmatsuRefundStr(i.nenmatsuRefund ? String(i.nenmatsuRefund) : "");
@@ -554,17 +558,20 @@ export default function SalaryPage() {
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>労災保険料率(%・会社全額負担)</label>
-                  <input type="number" step={0.05} min={0} className={inputCls} placeholder="0.3"
-                    value={rousaiRateStr}
-                    onChange={(e) => setRousaiRateStr(e.target.value)} />
+                  <label className={labelCls}>労災保険(事業の種類・会社全額負担)</label>
+                  <select className={inputCls} value={rousaiKey}
+                    onChange={(e) => { setRousaiKey(e.target.value); setRousaiCategoryKey(e.target.value); }}>
+                    {ROUSAI_CATEGORIES.map((c) => (
+                      <option key={c.key} value={c.key}>{c.label}({c.rate}%)</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               {result && (
                 <p className="text-xs text-gray-500 mt-3">
                   {KOYO_INDUSTRY_LABELS[koyoIndustry]}の雇用保険料率
                   (本人 {result.applied.koyoEmployeeRate}% / 会社 {result.applied.koyoEmployerRate}%)を適用中。
-                  労災保険料率は事業の種類ごとに異なります(例: 建築事業 0.95%、その他の各種事業 0.3%)。
+                  労災保険率は厚労省の公式料率(令和6年4月改定・令和8年度も同率)を事業の種類から自動適用しています(現在 {rousaiRate}%)。
                 </p>
               )}
             </section>
@@ -780,8 +787,7 @@ export default function SalaryPage() {
               <p className="text-xs text-gray-400 leading-relaxed">
                 ※ 勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和8)年度の公式料率
                 (協会けんぽ都道府県別料率・介護保険・厚生年金・雇用保険(業種別)・子ども・子育て拠出金)を自動適用します。
-                源泉所得税は支給年の電算機計算の特例(甲欄)により計算しています。
-                2026年支給分は令和8年分改正(基礎控除引上げ等)の反映が暫定のため、月々の源泉税額が公式税額表と差が出ることがあります(年末調整で精算されます。税額欄で手動修正も可能)。
+                源泉所得税は支給年の電算機計算の特例(甲欄)により計算しています(令和8年分改正対応済み。基礎控除の上乗せ特例は公式仕様どおり年末調整で精算)。
                 住民税・通勤手当の非課税処理などは含みません。実際の給与計算では公式の保険料額表もあわせてご確認ください。
               </p>
             </>

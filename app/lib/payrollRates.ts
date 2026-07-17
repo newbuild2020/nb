@@ -293,6 +293,31 @@ export function kodomoRate(year: number, month: number): number {
   return 0.2; // 平成27・28年度
 }
 
+// ============ 労災保険率(事業の種類別・令和6年4月改定/令和7・8年度同率) ============
+
+export interface RousaiCategory {
+  key: string;
+  label: string;
+  rate: number; // %(賃金総額に対する率。全額会社負担)
+}
+
+export const ROUSAI_CATEGORIES: RousaiCategory[] = [
+  { key: "kenchiku", label: "建築事業", rate: 0.95 },
+  { key: "kisetsu", label: "既設建築物設備工事業", rate: 1.2 },
+  { key: "douro", label: "道路新設事業", rate: 1.1 },
+  { key: "hosou", label: "舗装工事業", rate: 0.9 },
+  { key: "sonota_kensetsu", label: "その他の建設事業", rate: 1.5 },
+  { key: "jimu", label: "その他の各種事業(事務所など)", rate: 0.3 },
+];
+
+export const ROUSAI_DEFAULT_KEY = "kenchiku";
+
+/** 保存済みの料率から業種キーを逆引き(旧データの編集読込用) */
+export function rousaiKeyFromRate(rate: number): string {
+  const hit = ROUSAI_CATEGORIES.find((c) => Math.abs(c.rate - rate) < 0.001);
+  return hit ? hit.key : ROUSAI_DEFAULT_KEY;
+}
+
 // ============ 子ども・子育て支援金(令和8年4月分〜) ============
 
 /**
@@ -325,6 +350,14 @@ export function pensionSmrRange(year: number, month: number): { min: number; max
 
 /** 給与所得控除の月額(1円未満切上げ前の値を返す) */
 function kyuyoShotokuKojo(A: number, taxYear: number): number {
+  if (taxYear >= 2026) {
+    // 令和8年分以降(令和7年度税制改正: 最低保障65万円。財務省告示の電算機計算の特例)
+    if (A <= 158333) return 54167; // 65万円/12
+    if (A <= 299999) return A * 0.3 + 6667;
+    if (A <= 549999) return A * 0.2 + 36667;
+    if (A <= 708330) return A * 0.1 + 91667;
+    return 162500; // 上限195万円/12
+  }
   if (taxYear >= 2020) {
     // 令和2年分以降(給与所得控除の最低55万円)
     if (A <= 135416) return 45834;
@@ -355,6 +388,15 @@ function kyuyoShotokuKojo(A: number, taxYear: number): number {
 
 /** 基礎控除の月額 */
 function kisoKojo(A: number, taxYear: number): number {
+  if (taxYear >= 2026) {
+    // 令和8年分以降(国税庁 電算機計算の特例 第3表そのまま)。
+    // 低所得者への上乗せ特例(95万円等)は月次源泉では反映されず年末調整で精算される(公式仕様)。
+    if (A <= 2120833) return 48334;
+    if (A <= 2162499) return 40000;
+    if (A <= 2204166) return 26667;
+    if (A <= 2245833) return 13334;
+    return 0;
+  }
   if (taxYear >= 2020) {
     // 令和2年分以降は高所得で逓減
     if (A <= 2162499) return 40000;

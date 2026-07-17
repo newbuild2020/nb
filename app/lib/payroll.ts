@@ -26,6 +26,10 @@ export {
   KENPO_MIN_YEAR,
   KENPO_MAX_YEAR,
   KOYO_INDUSTRY_LABELS,
+  ROUSAI_CATEGORIES,
+  ROUSAI_DEFAULT_KEY,
+  rousaiKeyFromRate,
+  type RousaiCategory,
   type KoyoIndustry,
 } from "./payrollRates";
 
