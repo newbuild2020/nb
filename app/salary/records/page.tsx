@@ -124,6 +124,10 @@ export default function SalaryRecordsPage() {
   const cardCls = "bg-white rounded-2xl shadow p-5";
   const filteredCount = filtered.length;
 
+  // CSV出力は画面の並び(月ごと/年ごと/人ごとの表示順)に従う。
+  // 「人ごと」を選べば氏名順→勤務月順、「月ごと」なら勤務月順で出力される。
+  const exportList = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+
   if (!authed) return null;
 
   return (
@@ -196,14 +200,14 @@ export default function SalaryRecordsPage() {
             <button
               className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40"
               disabled={filteredCount === 0}
-              onClick={() => exportSalaryCsv(filtered, PREFECTURE_NAMES)}
+              onClick={() => exportSalaryCsv(exportList, PREFECTURE_NAMES)}
             >
               CSV出力({filteredCount}件)
             </button>
             <button
               className="px-4 py-2 rounded-lg border border-orange-300 text-sm text-orange-700 hover:bg-orange-50 disabled:opacity-40"
               disabled={filteredCount === 0}
-              onClick={() => exportCostCsv(filtered)}
+              onClick={() => exportCostCsv(exportList)}
             >
               コスト出力({filteredCount}件)
             </button>
