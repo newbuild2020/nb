@@ -47,7 +47,8 @@ export default function SalaryRecordsPage() {
   const [groupMode, setGroupMode] = useState<GroupMode>("month");
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  // 既定は全グループ折りたたみ。展開したものだけ true を持つ
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setRecords(loadSalaryRecords());
@@ -205,13 +206,13 @@ export default function SalaryRecordsPage() {
           </section>
         ) : (
           groups.map((g) => {
-            const isCollapsed = collapsed[g.gkey];
+            const isCollapsed = !expanded[g.gkey];
             const groupCost = g.items.reduce((sum, r) => sum + recordCost(r), 0);
             return (
               <section key={g.gkey} className={cardCls}>
                 <button
                   className="w-full flex items-center justify-between gap-2 mb-1"
-                  onClick={() => setCollapsed((c) => ({ ...c, [g.gkey]: !c[g.gkey] }))}
+                  onClick={() => setExpanded((c) => ({ ...c, [g.gkey]: !c[g.gkey] }))}
                 >
                   <span className="font-bold text-gray-800 flex items-center gap-2">
                     <span className="text-gray-400">{isCollapsed ? "▸" : "▾"}</span>

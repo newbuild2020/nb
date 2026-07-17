@@ -120,6 +120,20 @@ export default function SalaryPage() {
   const [depAutoNote, setDepAutoNote] = useState("");
   const depManualRef = useRef(false);
 
+  /** その人の既存明細のうち最も新しい勤務月(通算)を返す。無ければ null */
+  function latestWorkMonth(p: Person): number | null {
+    let best: number | null = null;
+    for (const r of records) {
+      const match =
+        (r.person && r.person.code === p.code) ||
+        (r.input.name === p.name && r.input.birth === p.birth);
+      if (!match) continue;
+      const ym = r.input.workYear * 12 + (r.input.workMonth - 1);
+      if (best === null || ym > best) best = ym;
+    }
+    return best;
+  }
+
   function handleSelectPerson(id: string) {
     setSelectedPersonId(id);
     setSaveMessage("");
@@ -130,6 +144,13 @@ export default function SalaryPage() {
       setBirth(p.birth);
       // 健康保険料率は会社所在地で決まるため、従業員の住所では上書きしない
       setIsExecutive(p.role === "executive");
+      // 勤務月を「その人の既存明細の次の月」に自動セット
+      const last = latestWorkMonth(p);
+      if (last !== null) {
+        const next = last + 1;
+        setWorkYear(Math.floor(next / 12));
+        setWorkMonth((next % 12) + 1);
+      }
     }
   }
 
@@ -393,14 +414,18 @@ export default function SalaryPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>勤務月(対象月)</label>
-                <input
-                  type="month" className={inputCls} min={`${KENPO_MIN_YEAR}-01`}
-                  value={`${workYear}-${String(workMonth).padStart(2, "0")}`}
-                  onChange={(e) => {
-                    const [y, m] = e.target.value.split("-").map(Number);
-                    if (y && m) { setWorkYear(y); setWorkMonth(m); }
-                  }}
-                />
+                <div className="flex gap-2">
+                  <select className={inputCls} value={workYear} onChange={(e) => setWorkYear(Number(e.target.value))}>
+                    {Array.from({ length: now.getFullYear() + 1 - KENPO_MIN_YEAR + 1 }, (_, i) => KENPO_MIN_YEAR + i).map((y) => (
+                      <option key={y} value={y}>{y}年</option>
+                    ))}
+                  </select>
+                  <select className={inputCls} value={workMonth} onChange={(e) => setWorkMonth(Number(e.target.value))}>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                      <option key={m} value={m}>{m}月</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className={labelCls}>給与支給のタイミング</label>
