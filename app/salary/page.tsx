@@ -563,9 +563,15 @@ export default function SalaryPage() {
             )}
           </section>
 
-          {!isExecutive && (
-            <section className={cardCls}>
-              <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">雇用保険・労災保険</h2>
+          <section className={cardCls}>
+            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">雇用保険・労災保険</h2>
+            {isExecutive ? (
+              <p className="text-sm text-gray-600">
+                役員は労働者ではないため、雇用保険・労災保険の対象外です(保険料は計上しません=常に適用外)。
+                区分を「社員」にすると、雇用保険の業種区分と労災保険の適用/適用外をここで選択できます。
+              </p>
+            ) : (
+              <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>雇用保険の業種区分</label>
@@ -615,8 +621,9 @@ export default function SalaryPage() {
                     : "労災保険は「適用外」のため計上していません。"}
                 </p>
               )}
-            </section>
-          )}
+              </>
+            )}
+          </section>
         </div>
 
         {/* ==== 計算結果 ==== */}
@@ -780,7 +787,7 @@ export default function SalaryPage() {
                       <td className="py-2 text-right">{yen(result.koyoEmployer)}</td>
                     </tr>
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">労災保険料{rousaiApplied ? `(全額会社 ${isExecutive ? "・役員対象外" : `${rousaiRate}%`})` : "(適用外)"}</td>
+                      <td className="py-2 text-gray-600">労災保険料{isExecutive ? "(役員対象外)" : rousaiApplied ? `(全額会社 ${rousaiRate}%)` : "(適用外)"}</td>
                       <td className="py-2 text-right">{yen(result.rousai)}</td>
                     </tr>
                     <tr className="border-b">
