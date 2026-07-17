@@ -18,14 +18,45 @@ body {
 }
 
 /*
- * 日付入力: appearance を外すと iOS で高さが潰れるため、
- * ネイティブ外観のまま最小高さだけ他の入力欄(py-2 + text-base)に合わせる。
+ * 日付・月入力の正規化(根本対策)。
+ * iOS WebKit の date/month 入力は UA 既定の固有幅を持ち width:100% を
+ * 無視して親からはみ出し、高さも内容依存で潰れ、空値では何も表示しない。
+ * そこで appearance を外して通常のテキスト入力と同じボックスモデルに固定し、
+ * 幅(最大100%)・高さ(min-height)・文字寄せを明示的に指定する。
  */
-input[type="date"] {
+input[type="date"],
+input[type="month"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   min-height: 2.625rem;
 }
-input[type="date"]::-webkit-date-and-time-value {
+input[type="date"]::-webkit-date-and-time-value,
+input[type="month"]::-webkit-date-and-time-value {
   text-align: left;
+  margin: 0;
+}
+
+/*
+ * iOS のみ: 空の date/month は何も表示されず「壊れた空欄」に見えるため、
+ * placeholder 属性の文言を擬似要素で表示する(値が入ると required+:valid で消える)。
+ * @supports (-webkit-touch-callout: none) は iOS Safari だけに一致する。
+ */
+@supports (-webkit-touch-callout: none) {
+  input[type="date"][placeholder][required]::before,
+  input[type="month"][placeholder][required]::before {
+    content: attr(placeholder);
+    color: #9ca3af;
+    margin-right: auto;
+  }
+  input[type="date"][required]:valid::before,
+  input[type="month"][required]:valid::before {
+    display: none;
+  }
 }
 
 /* ============ ダークモード(端末設定に追従) ============ */

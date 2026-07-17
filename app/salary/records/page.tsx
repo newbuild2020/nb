@@ -204,11 +204,13 @@ export default function SalaryRecordsPage() {
             <div>
               <label className="block text-xs text-gray-500 mb-1">勤務月(開始)</label>
               <input type="month" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                placeholder="年/月を選択" required
                 value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">勤務月(終了)</label>
               <input type="month" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                placeholder="年/月を選択" required
                 value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
             </div>
             <div>

@@ -395,7 +395,7 @@ export default function SalaryPage() {
               </div>
               <div>
                 <label className={labelCls}>生年月日</label>
-                <input type="date" className={inputCls} value={birth} onChange={(e) => setBirth(e.target.value)} />
+                <input type="date" className={inputCls} value={birth} placeholder="年/月/日を選択" required onChange={(e) => setBirth(e.target.value)} />
               </div>
               <div>
                 <label className={labelCls}>会社所在地(協会けんぽの都道府県)</label>

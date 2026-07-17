@@ -189,12 +189,12 @@ export default function PeoplePage() {
             </div>
             <div>
               <label className={labelCls}>生年月日 *</label>
-              <input type="date" className={inputCls} value={birth}
+              <input type="date" className={inputCls} value={birth} placeholder="年/月/日を選択" required
                 onChange={(e) => { setBirth(e.target.value); setError(""); }} />
             </div>
             <div>
               <label className={labelCls}>入社年月日 *</label>
-              <input type="date" className={inputCls} value={hireDate}
+              <input type="date" className={inputCls} value={hireDate} placeholder="年/月/日を選択" required
                 onChange={(e) => { setHireDate(e.target.value); setError(""); }} />
             </div>
             <div>
