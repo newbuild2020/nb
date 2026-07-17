@@ -121,6 +121,7 @@ export default function SalaryPage() {
 
   function handleSelectPerson(id: string) {
     setSelectedPersonId(id);
+    setSaveMessage("");
     depManualRef.current = false; // 扶養人数を再び自動追従させる
     const p = people.find((x) => x.id === id);
     if (p) {
@@ -213,6 +214,30 @@ export default function SalaryPage() {
     }
   }, [currentInput]);
 
+  /** 保存後にフォームを初期化(次の対象者をすぐ入力できるように)。
+   *  会社所在地・勤務月・支給タイミング・業種・労災率など会社共通の設定は保持する。 */
+  function resetFormAfterSave() {
+    setName("");
+    setBirth("1990-01-01");
+    setSelectedPersonId("");
+    setIsExecutive(false);
+    setGrossSalaryStr("");
+    setDependentsStr("0");
+    setInsuranceType("kyokai");
+    setKumiaiHealthStr("");
+    setKumiaiKaigoStr("");
+    setKumiaiFeeStr("");
+    setIncomeTaxOverride(null);
+    setTaxOverrideStr("");
+    setNenmatsuRefundStr("");
+    setNenmatsuCollectStr("");
+    setDepAutoNote("");
+    depManualRef.current = false;
+    setEditingId(null);
+    setEditingLabel("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function handleSave() {
     if (!currentInput || !result) return;
     if (!currentInput.name.trim()) {
@@ -220,14 +245,15 @@ export default function SalaryPage() {
       return;
     }
     const snapshot = buildSnapshot();
+    const label = `${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分`;
     if (editingId) {
       setRecords(updateSalaryRecord(editingId, currentInput, result, snapshot));
-      setSaveMessage(`更新しました(${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分)`);
     } else {
       saveSalaryRecord(currentInput, result, snapshot);
       setRecords(loadSalaryRecords());
-      setSaveMessage(`保存しました(${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分)`);
     }
+    resetFormAfterSave();
+    setSaveMessage(`${editingId ? "更新" : "保存"}しました(${label})。フォームを初期化しました。`);
   }
 
   function stopEditing() {
@@ -255,6 +281,11 @@ export default function SalaryPage() {
       <main className="max-w-5xl mx-auto px-4 mt-6 grid gap-6 lg:grid-cols-2">
         {/* ==== 入力フォーム ==== */}
         <div className="space-y-6">
+          {saveMessage && (
+            <div className="bg-green-50 border border-green-300 text-green-800 rounded-xl px-4 py-3 text-sm">
+              ✓ {saveMessage}
+            </div>
+          )}
           {editingId && (
             <div className="bg-blue-50 border border-blue-300 text-blue-900 rounded-xl px-4 py-3 text-sm flex items-center justify-between gap-3">
               <span>✎ 編集中: {editingLabel}</span>
@@ -303,7 +334,7 @@ export default function SalaryPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>氏名</label>
-                <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="山田 太郎" />
+                <input className={inputCls} value={name} onChange={(e) => { setName(e.target.value); setSaveMessage(""); }} placeholder="山田 太郎" />
               </div>
               <div>
                 <label className={labelCls}>生年月日</label>
@@ -679,7 +710,6 @@ export default function SalaryPage() {
                     明細一覧({records.length}件)
                   </button>
                 </div>
-                {saveMessage && <p className="text-sm text-green-700 mt-2">{saveMessage}</p>}
                 <p className="text-xs text-gray-400 mt-2">
                   ※ 明細はこの端末(ブラウザ)内に保存されます。保存した明細は「明細一覧」で確認できます。
                 </p>
