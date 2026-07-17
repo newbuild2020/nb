@@ -329,7 +329,7 @@ export default function SalaryPage() {
         <h1 className="text-lg font-bold">給料計算(給与・社会保険・所得税)</h1>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 mt-6 grid gap-6 lg:grid-cols-2">
+      <main className="max-w-6xl mx-auto px-4 mt-6 grid gap-6 md:grid-cols-2 pb-24 md:pb-0">
         {/* ==== 入力フォーム ==== */}
         <div className="space-y-6">
           {saveMessage && (
@@ -347,7 +347,7 @@ export default function SalaryPage() {
           )}
 
           <section className={cardCls}>
-            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">対象者の選択</h2>
+            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">① 対象者の選択</h2>
             {activePeople.length === 0 ? (
               <p className="text-sm text-gray-600">
                 選択できる在職の人員がいません。
@@ -381,7 +381,7 @@ export default function SalaryPage() {
           </section>
 
           <section className={cardCls}>
-            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">基本情報</h2>
+            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">② 基本情報</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>氏名</label>
@@ -439,7 +439,7 @@ export default function SalaryPage() {
           </section>
 
           <section className={cardCls}>
-            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">勤務月・支給月・給与</h2>
+            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">③ 勤務月・支給月・給与</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>勤務月(対象月)</label>
@@ -502,7 +502,7 @@ export default function SalaryPage() {
           </section>
 
           <section className={cardCls}>
-            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">健康保険の種類</h2>
+            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">④ 健康保険の種類</h2>
             <div className="flex rounded-lg overflow-hidden border border-gray-300 mb-4">
               <button
                 className={`flex-1 py-2 text-sm font-medium ${insuranceType === "kyokai" ? "bg-blue-700 text-white" : "bg-white text-gray-600"}`}
@@ -564,7 +564,7 @@ export default function SalaryPage() {
           </section>
 
           <section className={cardCls}>
-            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">雇用保険・労災保険</h2>
+            <h2 className="font-bold text-gray-800 mb-4 border-l-4 border-blue-700 pl-2">⑤ 雇用保険・労災保険</h2>
             {isExecutive ? (
               <p className="text-sm text-gray-600">
                 役員は労働者ではないため、雇用保険・労災保険の対象外です(保険料は計上しません=常に適用外)。
@@ -626,8 +626,8 @@ export default function SalaryPage() {
           </section>
         </div>
 
-        {/* ==== 計算結果 ==== */}
-        <div className="space-y-6">
+        {/* ==== 計算結果(デスクトップ/タブレットでは画面に固定しスクロール追従) ==== */}
+        <div className="space-y-6 md:sticky md:top-[4.5rem] md:self-start md:max-h-[calc(100vh-5.5rem)] md:overflow-y-auto md:pr-1">
           {result ? (
             <>
               {result.applied.kenpoFallback && (
@@ -637,6 +637,20 @@ export default function SalaryPage() {
                   新年度の料率が公表され次第、自動的に反映されます。
                 </div>
               )}
+
+              {/* ひと目でわかるサマリー */}
+              <section className={cardCls}>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">手取り金額</div>
+                    <div className="font-bold text-green-700 text-2xl leading-tight">{yen(result.netPay)}</div>
+                  </div>
+                  <div className="border-l border-gray-200">
+                    <div className="text-xs text-gray-500 mb-1">会社総コスト</div>
+                    <div className="font-bold text-gray-900 text-2xl leading-tight">{yen(result.totalCompanyCost)}</div>
+                  </div>
+                </div>
+              </section>
 
               <section className={cardCls}>
                 <h2 className="font-bold text-gray-800 mb-3 border-l-4 border-blue-700 pl-2">適用料率({result.applied.kenpoFiscalLabel})</h2>
@@ -846,6 +860,22 @@ export default function SalaryPage() {
           )}
         </div>
       </main>
+
+      {/* スマホ用: 画面下に固定の保存バー(手取りを常時表示) */}
+      {result && (
+        <div className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.10)] px-4 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[11px] text-gray-500 leading-none mb-1">手取り金額</div>
+            <div className="font-bold text-green-700 text-lg leading-tight truncate">{yen(result.netPay)}</div>
+          </div>
+          <button
+            className="shrink-0 px-6 py-2.5 rounded-xl bg-blue-700 text-white font-bold active:bg-blue-800"
+            onClick={handleSave}
+          >
+            {editingId ? "更新して保存" : "この明細を保存"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
