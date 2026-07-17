@@ -135,7 +135,7 @@ export default function PeoplePage() {
         <h1 className="text-lg font-bold">人員登録</h1>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 mt-6 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 mt-6 space-y-6">
         {editingId && (
           <div className="bg-blue-50 border border-blue-300 text-blue-900 rounded-xl px-4 py-3 text-sm flex items-center justify-between gap-3">
             <span>✎ 編集中: {name}({editingCode})</span>
@@ -228,7 +228,41 @@ export default function PeoplePage() {
           {people.length === 0 ? (
             <p className="text-sm text-gray-500">まだ登録がありません。</p>
           ) : (
-            <div className="overflow-x-auto">
+          <>
+            {/* スマホ・タブレット: カード表示(横スクロール不要で編集・退職・削除に届く) */}
+            <ul className="xl:hidden space-y-3">
+              {people.map((p) => (
+                <li key={p.id} className={`border rounded-xl p-4 ${p.status === "retired" ? "bg-gray-50 text-gray-400" : "bg-white"}`}>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="min-w-0">
+                      <span className="font-mono font-medium text-gray-700">{p.code}</span>
+                      <span className="ml-2 font-bold text-gray-900">{p.name}</span>
+                      {p.kana && <span className="ml-1 text-xs text-gray-400">({p.kana})</span>}
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      p.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-500"
+                    }`}>
+                      {STATUS_LABELS[p.status]}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 space-y-0.5 mb-3">
+                    <div>{ROLE_LABELS[p.role]} / {GENDER_LABELS[p.gender]} / 生年月日 {p.birth}</div>
+                    <div>入社日 {p.hireDate || "-"}</div>
+                    <div>{PREFECTURE_NAMES[p.prefectureIndex]}{p.address && ` ${p.address}`}</div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button className="flex-1 min-w-[4rem] py-2 rounded-lg border border-blue-200 text-blue-700 text-sm font-medium" onClick={() => handleEdit(p)}>編集</button>
+                    <button className="flex-1 min-w-[6rem] py-2 rounded-lg border border-amber-200 text-amber-600 text-sm font-medium" onClick={() => handleToggleStatus(p)}>
+                      {p.status === "active" ? "退職にする" : "在職に戻す"}
+                    </button>
+                    <button className="flex-1 min-w-[4rem] py-2 rounded-lg border border-red-200 text-red-600 text-sm font-medium" onClick={() => handleDelete(p)}>削除</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* 大画面(PC): テーブル表示 */}
+            <div className="hidden xl:block overflow-x-auto">
               <table className="w-full text-sm whitespace-nowrap">
                 <thead>
                   <tr className="text-left text-gray-500 border-b">
@@ -263,7 +297,9 @@ export default function PeoplePage() {
                       <td className="py-2 pr-4">{p.birth}</td>
                       <td className="py-2 pr-4">{p.hireDate || "-"}</td>
                       <td className="py-2 pr-4 text-gray-600">
-                        {PREFECTURE_NAMES[p.prefectureIndex]}{p.address && ` ${p.address}`}
+                        <div className="max-w-[10rem] truncate" title={`${PREFECTURE_NAMES[p.prefectureIndex]}${p.address ? ` ${p.address}` : ""}`}>
+                          {PREFECTURE_NAMES[p.prefectureIndex]}{p.address && ` ${p.address}`}
+                        </div>
                       </td>
                       <td className="py-2 text-right">
                         <button className="text-blue-700 hover:underline mr-3" onClick={() => handleEdit(p)}>編集</button>
@@ -277,6 +313,7 @@ export default function PeoplePage() {
                 </tbody>
               </table>
             </div>
+          </>
           )}
         </section>
       </main>
