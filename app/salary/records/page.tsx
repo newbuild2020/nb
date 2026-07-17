@@ -31,6 +31,17 @@ const GROUP_LABELS: Record<GroupMode, string> = {
   person: "人ごと",
 };
 
+/**
+ * 管理番号の並び順: 桁数が少ない方(役員 NB-01〜)が先、
+ * 同じ桁数なら番号の小さい順(NB-01→NB-02→NB-001→NB-002)。
+ * 番号なしの明細は最後。
+ */
+function codeRank(code: string): number {
+  const m = code.match(/(\d+)\s*$/);
+  if (!m) return Number.MAX_SAFE_INTEGER;
+  return m[1].length * 1_000_000 + parseInt(m[1], 10);
+}
+
 /** グループ内の項目合計 */
 function groupSum(items: SalaryRecord[], pick: (r: SalaryRecord) => number): number {
   return items.reduce((sum, r) => sum + pick(r), 0);
@@ -128,24 +139,22 @@ export default function SalaryRecordsPage() {
       } else {
         gkey = `p${r.person?.code ?? r.input.name}`;
         label = `${r.person?.code ? r.person.code + " " : ""}${r.input.name}`;
-        sort = 0; // 後で管理番号/氏名で整列
+        sort = codeRank(r.person?.code ?? ""); // 役員(桁少)→社員、番号順
       }
       if (!map.has(gkey)) map.set(gkey, { label, sort, items: [] });
       map.get(gkey)!.items.push(r);
     }
     const arr = [...map.entries()].map(([gkey, g]) => ({ gkey, ...g }));
-    // グループの並び
-    if (groupMode === "person") {
-      arr.sort((a, b) => a.label.localeCompare(b.label, "ja", { numeric: true }));
-    } else {
-      arr.sort((a, b) => a.sort - b.sort);
-    }
+    // グループの並び(人ごとは管理番号順、月/年は新しい順)
+    arr.sort((a, b) => a.sort - b.sort || a.label.localeCompare(b.label, "ja"));
     // グループ内: 勤務月の新しい順、同月は保存日時の新しい順
     for (const g of arr) {
       g.items.sort((a, b) => {
-        const dk = workKey(b) - workKey(a);
+        const dk = workKey(b) - workKey(a); // 勤務月の新しい順
         if (dk !== 0) return dk;
-        return a.savedAt < b.savedAt ? 1 : -1;
+        const dc = codeRank(a.person?.code ?? "") - codeRank(b.person?.code ?? ""); // 管理番号順
+        if (dc !== 0) return dc;
+        return a.savedAt < b.savedAt ? 1 : -1; // 同一人物内は保存の新しい順
       });
     }
     return arr;
