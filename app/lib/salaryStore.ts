@@ -107,6 +107,14 @@ async function downloadExcel(
   ws["!autofilter"] = {
     ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: header.length - 1 } }),
   };
+  // 数値セルは桁区切り+負数(控除額)を赤字で表示
+  const range = XLSX.utils.decode_range(ws["!ref"] as string);
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (cell && cell.t === "n") cell.z = "#,##0;[Red]-#,##0";
+    }
+  }
   // 列幅は見出し・データの実際の表示幅(全角=2)に合わせる(文字が切れない最小限)
   const dispWidth = (s: string): number => {
     let w = 0;
@@ -118,7 +126,8 @@ async function downloadExcel(
     for (const row of rows) {
       const v = row[c];
       if (v == null || v === "") continue;
-      w = Math.max(w, dispWidth(String(v)) + 1);
+      const s = typeof v === "number" ? v.toLocaleString("en-US") : String(v);
+      w = Math.max(w, dispWidth(s) + 1);
     }
     return { wch: w };
   });
@@ -194,6 +203,8 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
     rateHeader("子ども・子育て支援金", rates.map((x) => x.shienkin), "労使折半"),
     "組合費", "県連共済費", "年末調整 還付", "年末調整 徴収", "控除合計", "手取り金額(差引支給額)",
   ];
+  // 控除項目は画面と同じくマイナス表記(Excelでは赤字で表示される)
+  const neg = (n: number): number => (n ? -n : 0);
   const rows = records.map((r) => {
     const i = r.input;
     const s = r.result;
@@ -211,17 +222,17 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
       `${s.paymentYear}/${String(s.paymentMonth).padStart(2, "0")}${s.paymentDay ? "/" + String(s.paymentDay).padStart(2, "0") : ""}`,
       rate.fiscalLabel,
       i.grossSalary,
-      s.healthEmployee,
-      s.kaigoEmployee,
-      s.pensionEmployee,
-      s.koyoEmployee,
-      s.incomeTax,
-      s.shienkinEmployee ?? 0,
-      s.kumiaiFee,
-      s.kenrenKyosai ?? 0,
+      neg(s.healthEmployee),
+      neg(s.kaigoEmployee),
+      neg(s.pensionEmployee),
+      neg(s.koyoEmployee),
+      neg(s.incomeTax),
+      neg(s.shienkinEmployee ?? 0),
+      neg(s.kumiaiFee),
+      neg(s.kenrenKyosai ?? 0),
       s.nenmatsuRefund ?? 0,
-      s.nenmatsuCollect ?? 0,
-      s.totalEmployeeDeduction,
+      neg(s.nenmatsuCollect ?? 0),
+      neg(s.totalEmployeeDeduction),
       s.netPay,
     ];
   });
