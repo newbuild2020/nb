@@ -9,9 +9,11 @@ import {
   deleteSalaryRecord,
   exportSalaryCsv,
   exportCostCsv,
+  exportBackupJson,
   recordCost,
   type SalaryRecord,
 } from "../../lib/salaryStore";
+import { loadPeople } from "../../lib/peopleStore";
 import { syncSalaryRecords } from "../../lib/cloudSync";
 
 function yen(n: number): string {
@@ -204,6 +206,13 @@ export default function SalaryRecordsPage() {
               onClick={() => exportCostCsv(filtered)}
             >
               コスト出力({filteredCount}件)
+            </button>
+            <button
+              className="px-4 py-2 rounded-lg border border-green-400 text-sm text-green-700 hover:bg-green-50"
+              onClick={() => exportBackupJson(loadPeople(), records)}
+              title="人員と明細の全データをJSONで保存(データベースの生データ)"
+            >
+              データバックアップ(全件)
             </button>
           </div>
         </section>

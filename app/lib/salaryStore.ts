@@ -182,6 +182,26 @@ export function exportCostCsv(records: SalaryRecord[]): void {
   downloadCsv(csv, "コスト");
 }
 
+/**
+ * 全データ(人員+明細)をJSONファイルとしてダウンロード。
+ * データベースの生データそのもの。復元・移行・保管用。
+ */
+export function exportBackupJson(people: unknown[], records: SalaryRecord[]): void {
+  const backup = {
+    app: "NewBuild給料明細",
+    exportedAt: new Date().toISOString(),
+    people,
+    salaryRecords: records,
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `給料データバックアップ_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 /** CSV文字列をUTF-8 BOM付きでダウンロード */
 function downloadCsv(csv: string, prefix: string): void {
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
