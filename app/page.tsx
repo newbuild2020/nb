@@ -69,12 +69,12 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black text-black dark:text-white">
+    <div className="min-h-screen flex flex-col bg-gray-50 text-black">
       {/* ヘッダー */}
       <div className="w-full flex justify-end items-center gap-2 px-4 pt-4 sm:px-6">
         {authed && (
           <button
-            className="px-3 py-1.5 rounded-full text-sm border border-gray-300 bg-white text-gray-500 hover:bg-gray-100 dark:bg-black dark:border-[#424245] dark:hover:bg-[#1d1d1f] transition-colors"
+            className="px-3 py-1.5 rounded-full text-sm border border-gray-300 bg-white text-gray-500 hover:bg-gray-100 transition-colors"
             onClick={handleLogout}
           >
             ログアウト
@@ -97,13 +97,13 @@ export default function Home() {
             {NAV_BUTTONS.map((button) => (
               <button
                 key={button.id}
-                className="bg-white dark:bg-[#1d1d1f] border border-gray-200 dark:border-[#424245] rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all p-5 sm:p-6 text-left flex sm:flex-col items-center sm:items-start gap-4 sm:gap-3"
+                className="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all p-5 sm:p-6 text-left flex sm:flex-col items-center sm:items-start gap-4 sm:gap-3"
                 onClick={() => router.push(button.path)}
               >
                 <span className="text-3xl sm:text-4xl" aria-hidden>{button.icon}</span>
                 <span className="flex flex-col gap-0.5">
                   <span className="text-lg font-bold">{button.label}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{button.desc}</span>
+                  <span className="text-sm text-gray-500">{button.desc}</span>
                 </span>
               </button>
             ))}
@@ -111,13 +111,13 @@ export default function Home() {
         ) : (
           /* ==== 未ログイン: ログインフォーム ==== */
           <div className="w-full max-w-sm">
-            <div className="bg-white dark:bg-[#1d1d1f] border border-gray-200 dark:border-[#424245] rounded-2xl shadow-lg p-6 flex flex-col gap-4">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 flex flex-col gap-4">
               <h2 className="text-xl font-bold text-center">ログイン</h2>
               <p className="text-sm text-gray-500 text-center">ログインすると機能が利用できます</p>
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">アカウント</label>
+                <label className="block text-sm text-gray-600 mb-1">アカウント</label>
                 <input
-                  className="w-full border border-gray-300 dark:border-[#424245] rounded-lg px-3 py-2.5 bg-white dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={user}
                   autoComplete="username"
                   onChange={(e) => { setUser(e.target.value); setLoginError(""); }}
@@ -125,10 +125,10 @@ export default function Home() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">パスワード</label>
+                <label className="block text-sm text-gray-600 mb-1">パスワード</label>
                 <input
                   type="password"
-                  className="w-full border border-gray-300 dark:border-[#424245] rounded-lg px-3 py-2.5 bg-white dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={pass}
                   autoComplete="current-password"
                   onChange={(e) => { setPass(e.target.value); setLoginError(""); }}
@@ -137,7 +137,7 @@ export default function Home() {
               </div>
               {loginError && <p className="text-sm text-red-600 text-center">{loginError}</p>}
               <button
-                className="w-full py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black font-bold hover:opacity-85 transition-opacity"
+                className="w-full py-3 rounded-xl bg-black text-white font-bold hover:opacity-85 transition-opacity"
                 onClick={handleLogin}
               >
                 ログイン

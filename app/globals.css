@@ -2,7 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * このアプリ(給与・社会保険の業務ツール)は全ページで統一した
+ * ライトテーマに固定する。端末がダークモードでも、赤字のマイナス金額・
+ * 緑の在職バッジ・料率表などが常に同じ見え方になるようにするため。
+ * color-scheme: light により、日付・セレクトなどのネイティブ入力も
+ * ダーク端末で文字が薄くならず、常に読みやすく表示される。
+ */
 :root {
+  color-scheme: light;
   --background: #ffffff;
   --foreground: #222222;
   --primary: #222222;
@@ -10,49 +18,23 @@
   --accent: #38bdf8;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #181f2a;
-    --foreground: #f5f7fa;
-    --primary: #f5f7fa;
-    --secondary: #232b3a;
-    --accent: #38bdf8;
-  }
+html {
+  color-scheme: light;
 }
 
 body {
   background: var(--background);
+  color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-  transition: background 0.2s, color 0.2s;
 }
 
-a, button {
-  color: var(--primary);
-  transition: color 0.2s, background 0.2s;
+/* 日付入力はダーク端末でも文字・カレンダーアイコンが見えるように */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  color: #222222;
+  background-color: #ffffff;
 }
-a:hover, button:hover {
-  color: var(--accent);
-}
-
-input, textarea, select {
-  background: var(--secondary);
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 0.5em 0.75em;
-  transition: background 0.2s, color 0.2s, border 0.2s;
-}
-input:focus, textarea:focus, select:focus {
-  outline: none;
-  border-color: var(--primary);
-  background: #eaf1fb;
-}
-@media (prefers-color-scheme: dark) {
-  input, textarea, select {
-    background: #232b3a;
-    border: 1px solid #374151;
-  }
-  input:focus, textarea:focus, select:focus {
-    background: #232b3a;
-    border-color: var(--primary);
-  }
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
 }
