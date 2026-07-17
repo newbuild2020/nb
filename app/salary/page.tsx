@@ -274,13 +274,15 @@ export default function SalaryPage() {
     const snapshot = buildSnapshot();
     const label = `${currentInput.name} / ${result.paymentYear}年${result.paymentMonth}月支給分`;
     if (editingId) {
-      setRecords(updateSalaryRecord(editingId, currentInput, result, snapshot));
-    } else {
-      saveSalaryRecord(currentInput, result, snapshot);
-      setRecords(loadSalaryRecords());
+      // 編集モード: 更新して明細一覧へ戻る
+      updateSalaryRecord(editingId, currentInput, result, snapshot);
+      router.push("/salary/records");
+      return;
     }
+    saveSalaryRecord(currentInput, result, snapshot);
+    setRecords(loadSalaryRecords());
     resetFormAfterSave();
-    setSaveMessage(`${editingId ? "更新" : "保存"}しました(${label})。フォームを初期化しました。`);
+    setSaveMessage(`保存しました(${label})。フォームを初期化しました。`);
   }
 
   function stopEditing() {
