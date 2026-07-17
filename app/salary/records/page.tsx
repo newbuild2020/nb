@@ -336,16 +336,16 @@ export default function SalaryRecordsPage() {
                               {r.result.paymentDay ? `/${String(r.result.paymentDay).padStart(2, "0")}` : ""}
                             </td>
                             <td className="py-2 pr-4 text-right">{yen(r.input.grossSalary)}</td>
-                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.healthEmployee)}</td>
-                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.kaigoEmployee)}</td>
-                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.shienkinEmployee ?? 0)}</td>
-                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.pensionEmployee)}</td>
-                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.koyoEmployee)}</td>
-                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.incomeTax)}</td>
-                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.kumiaiFee)}</td>
-                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.kenrenKyosai ?? 0)}</td>
-                            <td className="py-2 pr-4 text-right text-green-700">{yen(r.result.nenmatsuRefund ?? 0)}</td>
-                            <td className="py-2 pr-4 text-right text-red-600">{yen(r.result.nenmatsuCollect ?? 0)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">-{yen(r.result.healthEmployee)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">-{yen(r.result.kaigoEmployee)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">-{yen(r.result.shienkinEmployee ?? 0)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">-{yen(r.result.pensionEmployee)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">-{yen(r.result.koyoEmployee)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">-{yen(r.result.incomeTax)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">-{yen(r.result.kumiaiFee)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">-{yen(r.result.kenrenKyosai ?? 0)}</td>
+                            <td className="py-2 pr-4 text-right text-green-700">+{yen(r.result.nenmatsuRefund ?? 0)}</td>
+                            <td className="py-2 pr-4 text-right text-red-600">-{yen(r.result.nenmatsuCollect ?? 0)}</td>
                             <td className="py-2 pr-4 text-right font-medium text-green-700">{yen(r.result.netPay)}</td>
                             <td className="py-2 pr-4 text-right">{yen(recordCost(r))}</td>
                             <td className="py-2 text-right">
@@ -368,16 +368,16 @@ export default function SalaryRecordsPage() {
                         <tr className="font-bold text-gray-800 border-t-2 border-gray-300">
                           <td className="py-2 pr-4" colSpan={4}>合計({g.items.length}件)</td>
                           <td className="py-2 pr-4 text-right">{yen(groupSum(g.items, (r) => r.input.grossSalary))}</td>
-                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.healthEmployee))}</td>
-                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.kaigoEmployee))}</td>
-                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.shienkinEmployee ?? 0))}</td>
-                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.pensionEmployee))}</td>
-                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.koyoEmployee))}</td>
-                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.incomeTax))}</td>
-                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.kumiaiFee))}</td>
-                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.kenrenKyosai ?? 0))}</td>
-                          <td className="py-2 pr-4 text-right text-green-700">{yen(groupSum(g.items, (r) => r.result.nenmatsuRefund ?? 0))}</td>
-                          <td className="py-2 pr-4 text-right text-red-600">{yen(groupSum(g.items, (r) => r.result.nenmatsuCollect ?? 0))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.healthEmployee))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.kaigoEmployee))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.shienkinEmployee ?? 0))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.pensionEmployee))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.koyoEmployee))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.incomeTax))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.kumiaiFee))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.kenrenKyosai ?? 0))}</td>
+                          <td className="py-2 pr-4 text-right text-green-700">+{yen(groupSum(g.items, (r) => r.result.nenmatsuRefund ?? 0))}</td>
+                          <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.nenmatsuCollect ?? 0))}</td>
                           <td className="py-2 pr-4 text-right text-green-700">{yen(groupSum(g.items, (r) => r.result.netPay))}</td>
                           <td className="py-2 pr-4 text-right">{yen(groupSum(g.items, recordCost))}</td>
                           <td className="py-2"></td>
