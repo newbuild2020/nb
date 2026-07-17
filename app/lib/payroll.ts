@@ -17,6 +17,7 @@ import {
   calcWithholdingTax,
   type KoyoIndustry,
 } from "./payrollRates";
+import { adjustToBusinessDay } from "./jpHolidays";
 
 export {
   PREFECTURE_NAMES,
@@ -195,6 +196,9 @@ export interface AppliedRates {
 export interface PayrollResult {
   paymentYear: number;
   paymentMonth: number;
+  paymentDay: number; // 支給日(25日基準・休日調整後)
+  paymentWeekday: number; // 0=日〜6=土
+  paymentAdjusted: boolean; // 25日が休日で調整されたか
   healthSmr: number;
   pensionSmr: number;
   kaigoApplied: boolean;
@@ -231,6 +235,11 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   const totalM = ym(wy, wm) + input.paymentOffset;
   const paymentYear = Math.floor(totalM / 12);
   const paymentMonth = (totalM % 12) + 1;
+  // 支給日 = 支給月の25日。休日(土日祝)なら最も近い平日へ(等距離は後ろ=向後)。
+  const payday = adjustToBusinessDay(paymentYear, paymentMonth, 25);
+  const paymentDay = payday.date.getDate();
+  const paymentWeekday = payday.date.getDay();
+  const paymentAdjusted = payday.adjusted;
 
   const hSmr = healthSMR(gross);
   const pSmr = pensionSMR(gross, wy, wm);
@@ -311,6 +320,9 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   return {
     paymentYear,
     paymentMonth,
+    paymentDay,
+    paymentWeekday,
+    paymentAdjusted,
     healthSmr: hSmr,
     pensionSmr: pSmr,
     kaigoApplied: kaigoOk,

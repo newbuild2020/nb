@@ -85,7 +85,7 @@ export default function SalaryRecordsPage() {
                     <th className="py-2 pr-4">管理番号</th>
                     <th className="py-2 pr-4">氏名</th>
                     <th className="py-2 pr-4">勤務月</th>
-                    <th className="py-2 pr-4">支給月</th>
+                    <th className="py-2 pr-4">支給日</th>
                     <th className="py-2 pr-4 text-right">総支給額</th>
                     <th className="py-2 pr-4 text-right">手取り</th>
                     <th className="py-2 pr-4 text-right">会社負担</th>
@@ -101,7 +101,10 @@ export default function SalaryRecordsPage() {
                       <td className="py-2 pr-4 font-mono">{r.person?.code ?? "-"}</td>
                       <td className="py-2 pr-4 font-medium">{r.input.name}</td>
                       <td className="py-2 pr-4">{r.input.workYear}/{String(r.input.workMonth).padStart(2, "0")}</td>
-                      <td className="py-2 pr-4">{r.result.paymentYear}/{String(r.result.paymentMonth).padStart(2, "0")}</td>
+                      <td className="py-2 pr-4">
+                        {r.result.paymentYear}/{String(r.result.paymentMonth).padStart(2, "0")}
+                        {r.result.paymentDay ? `/${String(r.result.paymentDay).padStart(2, "0")}` : ""}
+                      </td>
                       <td className="py-2 pr-4 text-right">{yen(r.input.grossSalary)}</td>
                       <td className="py-2 pr-4 text-right font-medium text-green-700">{yen(r.result.netPay)}</td>
                       <td className="py-2 pr-4 text-right">{yen(r.result.totalEmployerBurden)}</td>

@@ -13,6 +13,7 @@ import { useRequireLogin } from "../lib/auth";
 import { loadPeople, type Person } from "../lib/peopleStore";
 import { syncPeople, syncSalaryRecords } from "../lib/cloudSync";
 import { getCompanyPrefecture, setCompanyPrefecture } from "../lib/settingsStore";
+import { WEEKDAY_JA } from "../lib/jpHolidays";
 import {
   PREFECTURE_NAMES,
   KENPO_MIN_YEAR,
@@ -436,8 +437,12 @@ export default function SalaryPage() {
             </div>
             {result && (
               <p className="text-sm text-gray-600 mt-3">
-                支給月: <span className="font-bold text-blue-800">{result.paymentYear}年{MONTH_NAMES[result.paymentMonth - 1]}</span>
-                (勤務月 {workYear}年{MONTH_NAMES[workMonth - 1]} 分)
+                支給日: <span className="font-bold text-blue-800">
+                  {result.paymentYear}年{result.paymentMonth}月{result.paymentDay}日({WEEKDAY_JA[result.paymentWeekday]})
+                </span>
+                {result.paymentAdjusted && <span className="text-xs text-amber-600 ml-1">(25日が休日のため調整)</span>}
+                <br />
+                <span className="text-xs text-gray-500">勤務月 {workYear}年{MONTH_NAMES[workMonth - 1]} 分 / 原則: 翌月25日</span>
               </p>
             )}
           </section>

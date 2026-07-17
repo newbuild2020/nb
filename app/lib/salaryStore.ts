@@ -94,7 +94,7 @@ export function overwriteSalaryRecords(list: SalaryRecord[]): void {
 /** 全明細をCSV(Excel対応・UTF-8 BOM付き)としてダウンロード */
 export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string[]): void {
   const header = [
-    "保存日時", "管理番号", "氏名", "生年月日", "職務", "住所", "入社日", "地域", "区分", "勤務月", "支給月",
+    "保存日時", "管理番号", "氏名", "生年月日", "職務", "住所", "入社日", "地域", "区分", "勤務月", "支給日",
     "総支給額", "健康保険料", "介護保険料", "厚生年金保険料", "雇用保険料",
     "源泉所得税", "組合費", "年末調整還付", "年末調整徴収", "控除合計", "手取り金額",
     "健康保険(会社)", "介護保険(会社)", "厚生年金(会社)", "雇用保険(会社)",
@@ -114,7 +114,7 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
       prefectureNames[i.prefectureIndex] ?? "",
       i.isExecutive ? "役員" : "社員",
       `${i.workYear}/${String(i.workMonth).padStart(2, "0")}`,
-      `${s.paymentYear}/${String(s.paymentMonth).padStart(2, "0")}`,
+      `${s.paymentYear}/${String(s.paymentMonth).padStart(2, "0")}${s.paymentDay ? "/" + String(s.paymentDay).padStart(2, "0") : ""}`,
       i.grossSalary,
       s.healthEmployee,
       s.kaigoEmployee,
