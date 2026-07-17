@@ -665,7 +665,7 @@ export default function SalaryPage() {
                   {insuranceType === "kyokai" && <div>介護保険: {result.applied.kaigoRate}%</div>}
                   {result.applied.shienkinRate > 0 && <div>子ども・子育て支援金: {result.applied.shienkinRate}%</div>}
                   <div>厚生年金: {result.applied.pensionRate}%</div>
-                  <div>子ども・子育て拠出金: {result.applied.kodomoRate}%</div>
+                  <div>子ども・子育て拠出金: {result.applied.kodomoRate}%(会社のみ)</div>
                   {!isExecutive && <div>雇用保険 本人: {result.applied.koyoEmployeeRate}%({KOYO_INDUSTRY_LABELS[koyoIndustry]})</div>}
                   {!isExecutive && <div>雇用保険 会社: {result.applied.koyoEmployerRate}%</div>}
                   <div>所得税: {result.applied.taxYear}年分の計算式</div>
@@ -809,7 +809,7 @@ export default function SalaryPage() {
                       <td className="py-2 text-right">{yen(result.pensionEmployer)}</td>
                     </tr>
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">子ども・子育て拠出金({result.applied.kodomoRate}%)</td>
+                      <td className="py-2 text-gray-600">子ども・子育て拠出金(会社のみ {result.applied.kodomoRate}%)</td>
                       <td className="py-2 text-right">{yen(result.kodomoContribution)}</td>
                     </tr>
                     <tr className="border-b">

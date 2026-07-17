@@ -267,7 +267,7 @@ export function exportCostCsv(records: SalaryRecord[]): void {
     "健康保険料(会社分)", "介護保険料(会社分)",
     rateHeader("子ども・子育て支援金(会社分)", rates.map((x) => x.shienkin), "労使折半"),
     "厚生年金保険料(会社分)",
-    rateHeader("子ども・子育て拠出金", rates.map((x) => x.kodomo)),
+    rateHeader("子ども・子育て拠出金", rates.map((x) => x.kodomo), "会社のみ", true),
     rateHeader("雇用保険料", rates.map((x) => x.koyoComp), "会社分", true),
     rateHeader("労災保険料", rates.map((x) => x.rousai), "全額会社", true),
     "年末調整 還付", "年末調整 徴収", "コスト合計",
