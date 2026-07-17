@@ -173,6 +173,10 @@ export interface PayrollInput {
    * 端数調整や特殊な控除を反映したいときに使う。
    */
   incomeTaxOverride?: number | null;
+  /** 年末調整による還付額(円)。本人へ戻す=手取りに加算。通常12月給与で使用 */
+  nenmatsuRefund?: number;
+  /** 年末調整による追加徴収額(円)。本人から徴収=手取りから減算 */
+  nenmatsuCollect?: number;
 }
 
 /** 計算に実際に適用された料率(画面表示用) */
@@ -203,6 +207,8 @@ export interface PayrollResult {
   incomeTax: number;
   kumiaiFee: number;
   totalEmployeeDeduction: number;
+  nenmatsuRefund: number; // 年末調整還付(手取りに加算)
+  nenmatsuCollect: number; // 年末調整徴収(手取りから減算)
   netPay: number; // 手取り
   // 会社負担
   healthEmployer: number;
@@ -295,7 +301,9 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   const kumiaiFee = input.insuranceType === "kumiai" ? Math.round(input.kumiaiFee || 0) : 0;
 
   const totalEmployeeDeduction = shakaiHoken + incomeTax + kumiaiFee;
-  const netPay = gross - totalEmployeeDeduction;
+  const nenmatsuRefund = Math.max(0, Math.round(input.nenmatsuRefund || 0));
+  const nenmatsuCollect = Math.max(0, Math.round(input.nenmatsuCollect || 0));
+  const netPay = gross - totalEmployeeDeduction + nenmatsuRefund - nenmatsuCollect;
 
   const totalEmployerBurden =
     healthEmployer + kaigoEmployer + pensionEmployer + koyoEmployer + kodomoContribution + rousai;
@@ -324,6 +332,8 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
     incomeTax,
     kumiaiFee,
     totalEmployeeDeduction,
+    nenmatsuRefund,
+    nenmatsuCollect,
     netPay,
     healthEmployer,
     kaigoEmployer,

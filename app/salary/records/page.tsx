@@ -165,6 +165,12 @@ export default function SalaryRecordsPage() {
                     {r.result.kumiaiFee > 0 && (
                       <tr className="border-b"><td className="py-1.5 text-gray-600">組合費</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.kumiaiFee)}</td></tr>
                     )}
+                    {(r.result.nenmatsuRefund ?? 0) > 0 && (
+                      <tr className="border-b"><td className="py-1.5 text-gray-600">年末調整 還付</td><td className="py-1.5 text-right text-green-700">+{yen(r.result.nenmatsuRefund)}</td></tr>
+                    )}
+                    {(r.result.nenmatsuCollect ?? 0) > 0 && (
+                      <tr className="border-b"><td className="py-1.5 text-gray-600">年末調整 徴収</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.nenmatsuCollect)}</td></tr>
+                    )}
                     <tr><td className="py-2 font-bold">手取り金額</td><td className="py-2 text-right font-bold text-green-700 text-lg">{yen(r.result.netPay)}</td></tr>
                   </tbody>
                 </table>

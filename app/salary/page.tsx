@@ -43,7 +43,7 @@ export default function SalaryPage() {
   const [workYear, setWorkYear] = useState(now.getFullYear());
   const [workMonth, setWorkMonth] = useState(now.getMonth() + 1);
   const [paymentOffset, setPaymentOffset] = useState<0 | 1 | 2>(1);
-  const [grossSalaryStr, setGrossSalaryStr] = useState("300000");
+  const [grossSalaryStr, setGrossSalaryStr] = useState("");
   const [dependentsStr, setDependentsStr] = useState("0");
   const [insuranceType, setInsuranceType] = useState<"kyokai" | "kumiai">("kyokai");
   const [kumiaiHealthStr, setKumiaiHealthStr] = useState("");
@@ -54,6 +54,8 @@ export default function SalaryPage() {
 
   const [incomeTaxOverride, setIncomeTaxOverride] = useState<number | null>(null);
   const [taxOverrideStr, setTaxOverrideStr] = useState("");
+  const [nenmatsuRefundStr, setNenmatsuRefundStr] = useState("");
+  const [nenmatsuCollectStr, setNenmatsuCollectStr] = useState("");
 
   // 入力欄は文字列で保持し、計算時に数値へ変換する(0が消せない問題の対策)
   const grossSalary = Math.max(0, Number(grossSalaryStr) || 0);
@@ -62,6 +64,8 @@ export default function SalaryPage() {
   const kumiaiKaigoMonthly = Math.max(0, Number(kumiaiKaigoStr) || 0);
   const kumiaiFee = Math.max(0, Number(kumiaiFeeStr) || 0);
   const rousaiRate = Math.max(0, Number(rousaiRateStr) || 0);
+  const nenmatsuRefund = Math.max(0, Number(nenmatsuRefundStr) || 0);
+  const nenmatsuCollect = Math.max(0, Number(nenmatsuCollectStr) || 0);
   const [records, setRecords] = useState<SalaryRecord[]>([]);
   const [saveMessage, setSaveMessage] = useState("");
   const [people, setPeople] = useState<Person[]>([]);
@@ -101,6 +105,8 @@ export default function SalaryPage() {
         setRousaiRateStr(String(i.rousaiRate ?? ROUSAI_DEFAULT_RATE));
         setIncomeTaxOverride(i.incomeTaxOverride ?? null);
         setTaxOverrideStr(i.incomeTaxOverride != null ? String(i.incomeTaxOverride) : "");
+        setNenmatsuRefundStr(i.nenmatsuRefund ? String(i.nenmatsuRefund) : "");
+        setNenmatsuCollectStr(i.nenmatsuCollect ? String(i.nenmatsuCollect) : "");
         setEditingId(r.id);
         setEditingLabel(`${i.name} / ${r.result.paymentYear}年${r.result.paymentMonth}月支給分`);
       }
@@ -189,11 +195,13 @@ export default function SalaryPage() {
       koyoIndustry,
       rousaiRate,
       incomeTaxOverride,
+      nenmatsuRefund,
+      nenmatsuCollect,
     };
   }, [
     name, birth, prefectureIndex, isExecutive, workYear, workMonth, paymentOffset,
     grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiKaigoMonthly, kumiaiFee,
-    koyoIndustry, rousaiRate, incomeTaxOverride,
+    koyoIndustry, rousaiRate, incomeTaxOverride, nenmatsuRefund, nenmatsuCollect,
   ]);
 
   const result = useMemo(() => {
@@ -376,6 +384,22 @@ export default function SalaryPage() {
                   type="number" min={0} step={1000} className={inputCls} placeholder="0"
                   value={grossSalaryStr}
                   onChange={(e) => setGrossSalaryStr(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>年末調整 還付(円・手取りに加算)</label>
+                <input
+                  type="number" min={0} step={100} className={inputCls} placeholder="0"
+                  value={nenmatsuRefundStr}
+                  onChange={(e) => setNenmatsuRefundStr(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>年末調整 徴収(円・手取りから減算)</label>
+                <input
+                  type="number" min={0} step={100} className={inputCls} placeholder="0"
+                  value={nenmatsuCollectStr}
+                  onChange={(e) => setNenmatsuCollectStr(e.target.value)}
                 />
               </div>
             </div>
@@ -576,6 +600,18 @@ export default function SalaryPage() {
                       <td className="py-2 text-gray-600">控除合計</td>
                       <td className="py-2 text-right">-{yen(result.totalEmployeeDeduction)}</td>
                     </tr>
+                    {result.nenmatsuRefund > 0 && (
+                      <tr className="border-b">
+                        <td className="py-2 text-gray-600">年末調整 還付</td>
+                        <td className="py-2 text-right text-green-700">+{yen(result.nenmatsuRefund)}</td>
+                      </tr>
+                    )}
+                    {result.nenmatsuCollect > 0 && (
+                      <tr className="border-b">
+                        <td className="py-2 text-gray-600">年末調整 徴収</td>
+                        <td className="py-2 text-right text-red-600">-{yen(result.nenmatsuCollect)}</td>
+                      </tr>
+                    )}
                     <tr>
                       <td className="py-3 font-bold text-gray-800">手取り金額(差引支給額)</td>
                       <td className="py-3 text-right font-bold text-green-700 text-xl">{yen(result.netPay)}</td>

@@ -96,7 +96,7 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
   const header = [
     "保存日時", "管理番号", "氏名", "生年月日", "職務", "住所", "入社日", "地域", "区分", "勤務月", "支給月",
     "総支給額", "健康保険料", "介護保険料", "厚生年金保険料", "雇用保険料",
-    "源泉所得税", "組合費", "控除合計", "手取り金額",
+    "源泉所得税", "組合費", "年末調整還付", "年末調整徴収", "控除合計", "手取り金額",
     "健康保険(会社)", "介護保険(会社)", "厚生年金(会社)", "雇用保険(会社)",
     "労災保険", "子ども・子育て拠出金", "会社負担合計", "会社総コスト",
   ];
@@ -122,6 +122,8 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
       s.koyoEmployee,
       s.incomeTax,
       s.kumiaiFee,
+      s.nenmatsuRefund ?? 0,
+      s.nenmatsuCollect ?? 0,
       s.totalEmployeeDeduction,
       s.netPay,
       s.healthEmployer,
