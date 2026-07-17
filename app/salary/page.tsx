@@ -663,9 +663,9 @@ export default function SalaryPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-600">
                   {insuranceType === "kyokai" && <div>健康保険: {result.applied.kenpoRate}%</div>}
                   {insuranceType === "kyokai" && <div>介護保険: {result.applied.kaigoRate}%</div>}
+                  {result.applied.shienkinRate > 0 && <div>子ども・子育て支援金: {result.applied.shienkinRate}%</div>}
                   <div>厚生年金: {result.applied.pensionRate}%</div>
                   <div>子ども・子育て拠出金: {result.applied.kodomoRate}%</div>
-                  {result.applied.shienkinRate > 0 && <div>子ども・子育て支援金: {result.applied.shienkinRate}%</div>}
                   {!isExecutive && <div>雇用保険 本人: {result.applied.koyoEmployeeRate}%({KOYO_INDUSTRY_LABELS[koyoIndustry]})</div>}
                   {!isExecutive && <div>雇用保険 会社: {result.applied.koyoEmployerRate}%</div>}
                   <div>所得税: {result.applied.taxYear}年分の計算式</div>
@@ -699,6 +699,12 @@ export default function SalaryPage() {
                       </td>
                       <td className="py-2 text-right text-red-600">-{yen(result.kaigoEmployee)}</td>
                     </tr>
+                    {result.shienkinEmployee > 0 && (
+                      <tr className="border-b">
+                        <td className="py-2 text-gray-600">子ども・子育て支援金({result.applied.shienkinRate}% 労使折半)</td>
+                        <td className="py-2 text-right text-red-600">-{yen(result.shienkinEmployee)}</td>
+                      </tr>
+                    )}
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">厚生年金保険料({result.applied.pensionRate}% 労使折半)</td>
                       <td className="py-2 text-right text-red-600">-{yen(result.pensionEmployee)}</td>
@@ -707,12 +713,6 @@ export default function SalaryPage() {
                       <td className="py-2 text-gray-600">雇用保険料{isExecutive ? "(役員対象外)" : `(本人 ${result.applied.koyoEmployeeRate}%)`}</td>
                       <td className="py-2 text-right text-red-600">-{yen(result.koyoEmployee)}</td>
                     </tr>
-                    {result.shienkinEmployee > 0 && (
-                      <tr className="border-b">
-                        <td className="py-2 text-gray-600">子ども・子育て支援金({result.applied.shienkinRate}% 労使折半)</td>
-                        <td className="py-2 text-right text-red-600">-{yen(result.shienkinEmployee)}</td>
-                      </tr>
-                    )}
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">
                         源泉所得税
@@ -798,9 +798,19 @@ export default function SalaryPage() {
                         <td className="py-2 text-right">{yen(result.kaigoEmployer)}</td>
                       </tr>
                     )}
+                    {result.shienkinEmployer > 0 && (
+                      <tr className="border-b">
+                        <td className="py-2 text-gray-600">子ども・子育て支援金(会社分)({result.applied.shienkinRate}% 労使折半)</td>
+                        <td className="py-2 text-right">{yen(result.shienkinEmployer)}</td>
+                      </tr>
+                    )}
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">厚生年金保険料(会社分)({result.applied.pensionRate}% 労使折半)</td>
                       <td className="py-2 text-right">{yen(result.pensionEmployer)}</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="py-2 text-gray-600">子ども・子育て拠出金({result.applied.kodomoRate}%)</td>
+                      <td className="py-2 text-right">{yen(result.kodomoContribution)}</td>
                     </tr>
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">雇用保険料(会社分 {result.applied.koyoEmployerRate}%)</td>
@@ -810,16 +820,6 @@ export default function SalaryPage() {
                       <td className="py-2 text-gray-600">労災保険料{isExecutive ? "(役員対象外)" : rousaiApplied ? `(全額会社 ${rousaiRate}%)` : "(適用外)"}</td>
                       <td className="py-2 text-right">{yen(result.rousai)}</td>
                     </tr>
-                    <tr className="border-b">
-                      <td className="py-2 text-gray-600">子ども・子育て拠出金({result.applied.kodomoRate}%)</td>
-                      <td className="py-2 text-right">{yen(result.kodomoContribution)}</td>
-                    </tr>
-                    {result.shienkinEmployer > 0 && (
-                      <tr className="border-b">
-                        <td className="py-2 text-gray-600">子ども・子育て支援金(会社分)({result.applied.shienkinRate}% 労使折半)</td>
-                        <td className="py-2 text-right">{yen(result.shienkinEmployer)}</td>
-                      </tr>
-                    )}
                     <tr className="border-b">
                       <td className="py-2 font-bold text-gray-800">会社負担合計</td>
                       <td className="py-2 text-right font-bold text-orange-600 text-lg">{yen(result.totalEmployerBurden)}</td>
