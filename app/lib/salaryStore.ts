@@ -107,23 +107,39 @@ async function downloadExcel(
   ws["!autofilter"] = {
     ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: header.length - 1 } }),
   };
-  ws["!cols"] = header.map((h) => ({ wch: Math.max(10, h.length * 2 + 2) }));
+  // 列幅は見出し・データの実際の表示幅(全角=2)に合わせる(文字が切れない最小限)
+  const dispWidth = (s: string): number => {
+    let w = 0;
+    for (const ch of s) w += ch.charCodeAt(0) > 0xff ? 2 : 1;
+    return w;
+  };
+  ws["!cols"] = header.map((h, c) => {
+    let w = dispWidth(h) + 3; // +3 はオートフィルタの▼ボタン分
+    for (const row of rows) {
+      const v = row[c];
+      if (v == null || v === "") continue;
+      w = Math.max(w, dispWidth(String(v)) + 1);
+    }
+    return { wch: w };
+  });
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   XLSX.writeFile(wb, `${prefix}_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
 /**
- * 列見出しに公式料率(%)を埋め込む。
- * 出力対象の全明細で率が同じなら「9.92%」、年度をまたいで
- * 異なる場合は「9.91〜9.92%」のように範囲で表示する。
+ * 列見出しに公式料率(%)を埋め込む(画面の行ラベルと同じ書式)。
+ * 出力対象の全明細で率が同じなら「9.92%」、年度をまたいで異なる
+ * 場合は範囲ではなく「1.59%・1.62%」と各料率をそのまま列挙する
+ * (どの行がどの率かは「適用年度」列で判別できる)。
  * 率で計算していない明細(定額の組合保険など)は無視する。
  */
-function rateHeader(base: string, values: (number | string)[], note = ""): string {
-  const nums = [...new Set(values.filter((v): v is number => typeof v === "number"))];
+function rateHeader(base: string, values: (number | string)[], note = "", noteFirst = false): string {
+  const nums = [...new Set(values.filter((v): v is number => typeof v === "number"))].sort((a, b) => a - b);
   if (nums.length === 0) return base;
-  const label = nums.length === 1 ? `${nums[0]}%` : `${Math.min(...nums)}〜${Math.max(...nums)}%`;
-  return `${base}(${label}${note ? " " + note : ""})`;
+  const label = nums.map((n) => `${n}%`).join("・");
+  const inner = noteFirst ? `${note} ${label}` : note ? `${label} ${note}` : label;
+  return `${base}(${inner})`;
 }
 
 /**
@@ -168,15 +184,15 @@ function appliedRateCols(r: SalaryRecord): {
 export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string[]): void {
   const rates = records.map(appliedRateCols);
   const header = [
-    "保存日時", "管理番号", "氏名", "生年月日", "職務", "住所", "入社日", "地域", "区分", "勤務月", "支給日", "適用年度",
+    "保存日時", "管理番号", "氏名", "生年月日", "住所", "入社日", "地域", "区分", "勤務月", "支給日", "適用年度",
     "総支給額",
     rateHeader("健康保険料", rates.map((x) => x.kenpo), "労使折半"),
     rateHeader("介護保険料", rates.map((x) => x.kaigo), "労使折半"),
     rateHeader("厚生年金保険料", rates.map((x) => x.pension), "労使折半"),
-    rateHeader("雇用保険料", rates.map((x) => x.koyoEmp), "本人分"),
+    rateHeader("雇用保険料", rates.map((x) => x.koyoEmp), "本人", true),
     "源泉所得税",
-    rateHeader("支援金(本人)", rates.map((x) => x.shienkin), "労使折半"),
-    "組合費", "県連共済費", "年末調整還付", "年末調整徴収", "控除合計", "手取り金額",
+    rateHeader("子ども・子育て支援金", rates.map((x) => x.shienkin), "労使折半"),
+    "組合費", "県連共済費", "年末調整 還付", "年末調整 徴収", "控除合計", "手取り金額(差引支給額)",
   ];
   const rows = records.map((r) => {
     const i = r.input;
@@ -187,7 +203,6 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
       r.person?.code ?? "",
       i.name,
       i.birth,
-      r.person ? (r.person.role === "executive" ? "役員" : "社員") : "",
       r.person?.address ?? "",
       r.person?.hireDate ?? "",
       prefectureNames[i.prefectureIndex] ?? "",
@@ -234,15 +249,16 @@ export function exportCostCsv(records: SalaryRecord[]): void {
     rateHeader("健康保険料", rates.map((x) => x.kenpo), "労使折半"),
     rateHeader("介護保険料", rates.map((x) => x.kaigo), "労使折半"),
     rateHeader("厚生年金保険料", rates.map((x) => x.pension), "労使折半"),
-    rateHeader("雇用保険料", rates.map((x) => x.koyoEmp), "本人分"),
+    rateHeader("雇用保険料", rates.map((x) => x.koyoEmp), "本人", true),
     "源泉所得税",
-    rateHeader("支援金(本人)", rates.map((x) => x.shienkin), "労使折半"),
+    rateHeader("子ども・子育て支援金", rates.map((x) => x.shienkin), "労使折半"),
     "組合費", "県連共済費",
     "健康保険料(会社分)", "介護保険料(会社分)", "厚生年金保険料(会社分)",
-    rateHeader("雇用保険料(会社分)", rates.map((x) => x.koyoComp)),
-    rateHeader("労災保険料", rates.map((x) => x.rousai)),
+    rateHeader("雇用保険料", rates.map((x) => x.koyoComp), "会社分", true),
+    rateHeader("労災保険料", rates.map((x) => x.rousai), "全額会社", true),
     rateHeader("子ども・子育て拠出金", rates.map((x) => x.kodomo)),
-    "支援金(会社)", "年末調整還付", "年末調整徴収", "コスト合計",
+    rateHeader("子ども・子育て支援金(会社分)", rates.map((x) => x.shienkin), "労使折半"),
+    "年末調整 還付", "年末調整 徴収", "コスト合計",
   ];
   const rows = records.map((r) => {
     const s = r.result;
