@@ -50,6 +50,7 @@ export default function SalaryPage() {
   const [kumiaiHealthStr, setKumiaiHealthStr] = useState("");
   const [kumiaiKaigoStr, setKumiaiKaigoStr] = useState("");
   const [kumiaiFeeStr, setKumiaiFeeStr] = useState("");
+  const [kenrenKyosaiStr, setKenrenKyosaiStr] = useState("");
   const [koyoIndustry, setKoyoIndustry] = useState<KoyoIndustry>("construction");
   const [rousaiRateStr, setRousaiRateStr] = useState(String(ROUSAI_DEFAULT_RATE));
 
@@ -64,6 +65,7 @@ export default function SalaryPage() {
   const kumiaiHealthMonthly = Math.max(0, Number(kumiaiHealthStr) || 0);
   const kumiaiKaigoMonthly = Math.max(0, Number(kumiaiKaigoStr) || 0);
   const kumiaiFee = Math.max(0, Number(kumiaiFeeStr) || 0);
+  const kenrenKyosai = Math.max(0, Number(kenrenKyosaiStr) || 0);
   const rousaiRate = Math.max(0, Number(rousaiRateStr) || 0);
   const nenmatsuRefund = Math.max(0, Number(nenmatsuRefundStr) || 0);
   const nenmatsuCollect = Math.max(0, Number(nenmatsuCollectStr) || 0);
@@ -102,6 +104,7 @@ export default function SalaryPage() {
         setKumiaiHealthStr(i.kumiaiHealthMonthly ? String(i.kumiaiHealthMonthly) : "");
         setKumiaiKaigoStr(i.kumiaiKaigoMonthly ? String(i.kumiaiKaigoMonthly) : "");
         setKumiaiFeeStr(i.kumiaiFee ? String(i.kumiaiFee) : "");
+        setKenrenKyosaiStr(i.kenrenKyosai ? String(i.kenrenKyosai) : "");
         setKoyoIndustry(i.koyoIndustry ?? "construction");
         setRousaiRateStr(String(i.rousaiRate ?? ROUSAI_DEFAULT_RATE));
         setIncomeTaxOverride(i.incomeTaxOverride ?? null);
@@ -215,6 +218,7 @@ export default function SalaryPage() {
       kumiaiHealthMonthly,
       kumiaiKaigoMonthly,
       kumiaiFee,
+      kenrenKyosai,
       koyoIndustry,
       rousaiRate,
       incomeTaxOverride,
@@ -223,7 +227,7 @@ export default function SalaryPage() {
     };
   }, [
     name, birth, prefectureIndex, isExecutive, workYear, workMonth, paymentOffset,
-    grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiKaigoMonthly, kumiaiFee,
+    grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiKaigoMonthly, kumiaiFee, kenrenKyosai,
     koyoIndustry, rousaiRate, incomeTaxOverride, nenmatsuRefund, nenmatsuCollect,
   ]);
 
@@ -249,6 +253,7 @@ export default function SalaryPage() {
     setKumiaiHealthStr("");
     setKumiaiKaigoStr("");
     setKumiaiFeeStr("");
+    setKenrenKyosaiStr("");
     setIncomeTaxOverride(null);
     setTaxOverrideStr("");
     setNenmatsuRefundStr("");
@@ -524,6 +529,12 @@ export default function SalaryPage() {
                     value={kumiaiFeeStr}
                     onChange={(e) => setKumiaiFeeStr(e.target.value)} />
                 </div>
+                <div>
+                  <label className={labelCls}>県連共済費(円/月・給与から控除)</label>
+                  <input type="number" min={0} step={100} className={inputCls} placeholder="0"
+                    value={kenrenKyosaiStr}
+                    onChange={(e) => setKenrenKyosaiStr(e.target.value)} />
+                </div>
               </div>
             )}
           </section>
@@ -655,6 +666,12 @@ export default function SalaryPage() {
                       <tr className="border-b">
                         <td className="py-2 text-gray-600">組合費</td>
                         <td className="py-2 text-right text-red-600">-{yen(result.kumiaiFee)}</td>
+                      </tr>
+                    )}
+                    {insuranceType === "kumiai" && (
+                      <tr className="border-b">
+                        <td className="py-2 text-gray-600">県連共済費</td>
+                        <td className="py-2 text-right text-red-600">-{yen(result.kenrenKyosai)}</td>
                       </tr>
                     )}
                     <tr className="border-b">

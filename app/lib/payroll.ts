@@ -167,6 +167,7 @@ export interface PayrollInput {
    */
   kumiaiKaigoMonthly: number;
   kumiaiFee: number; // 組合費(本人給与から控除・円/月)
+  kenrenKyosai: number; // 県連共済費(本人給与から控除・円/月)
   koyoIndustry: KoyoIndustry; // 雇用保険の業種区分
   rousaiRate: number; // 労災保険料率 %
   /**
@@ -210,6 +211,7 @@ export interface PayrollResult {
   koyoEmployee: number;
   incomeTax: number;
   kumiaiFee: number;
+  kenrenKyosai: number;
   totalEmployeeDeduction: number;
   nenmatsuRefund: number; // 年末調整還付(手取りに加算)
   nenmatsuCollect: number; // 年末調整徴収(手取りから減算)
@@ -308,8 +310,9 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
       : calcWithholdingTax(gross - shakaiHoken, input.dependents, paymentYear);
 
   const kumiaiFee = input.insuranceType === "kumiai" ? Math.round(input.kumiaiFee || 0) : 0;
+  const kenrenKyosai = input.insuranceType === "kumiai" ? Math.round(input.kenrenKyosai || 0) : 0;
 
-  const totalEmployeeDeduction = shakaiHoken + incomeTax + kumiaiFee;
+  const totalEmployeeDeduction = shakaiHoken + incomeTax + kumiaiFee + kenrenKyosai;
   const nenmatsuRefund = Math.max(0, Math.round(input.nenmatsuRefund || 0));
   const nenmatsuCollect = Math.max(0, Math.round(input.nenmatsuCollect || 0));
   const netPay = gross - totalEmployeeDeduction + nenmatsuRefund - nenmatsuCollect;
@@ -343,6 +346,7 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
     koyoEmployee,
     incomeTax,
     kumiaiFee,
+    kenrenKyosai,
     totalEmployeeDeduction,
     nenmatsuRefund,
     nenmatsuCollect,
