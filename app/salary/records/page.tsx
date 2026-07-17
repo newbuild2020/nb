@@ -307,6 +307,7 @@ export default function SalaryRecordsPage() {
                         <tr className="text-left text-gray-500 border-b">
                           <th className="py-2 pr-4">管理番号</th>
                           <th className="py-2 pr-4">氏名</th>
+                          <th className="py-2 pr-4">区分</th>
                           <th className="py-2 pr-4">勤務月</th>
                           <th className="py-2 pr-4">支給日</th>
                           <th className="py-2 pr-4 text-right">総支給額</th>
@@ -330,6 +331,7 @@ export default function SalaryRecordsPage() {
                           <tr key={r.id} className="border-b align-top">
                             <td className="py-2 pr-4 font-mono">{r.person?.code ?? "-"}</td>
                             <td className="py-2 pr-4 font-medium">{r.input.name}</td>
+                            <td className="py-2 pr-4">{r.input.isExecutive ? "役員" : "社員"}</td>
                             <td className="py-2 pr-4">{r.input.workYear}/{String(r.input.workMonth).padStart(2, "0")}</td>
                             <td className="py-2 pr-4">
                               {r.result.paymentYear}/{String(r.result.paymentMonth).padStart(2, "0")}
@@ -378,7 +380,7 @@ export default function SalaryRecordsPage() {
                       {/* グループ合計(絞り込み・並び替え後の表示対象の合計) */}
                       <tfoot>
                         <tr className="font-bold text-gray-800 border-t-2 border-gray-300">
-                          <td className="py-2 pr-4" colSpan={4}>合計({g.items.length}件)</td>
+                          <td className="py-2 pr-4" colSpan={5}>合計({g.items.length}件)</td>
                           <td className="py-2 pr-4 text-right">{yen(groupSum(g.items, (r) => r.input.grossSalary))}</td>
                           <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.healthEmployee))}</td>
                           <td className="py-2 pr-4 text-right text-red-600">-{yen(groupSum(g.items, (r) => r.result.kaigoEmployee))}</td>
