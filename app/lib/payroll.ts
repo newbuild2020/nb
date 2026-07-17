@@ -176,6 +176,12 @@ export interface PayrollInput {
   koyoIndustry: KoyoIndustry; // 雇用保険の業種区分
   rousaiRate: number; // 労災保険料率 %
   /**
+   * 労災保険の適用。false = 適用外(計上しない)。
+   * 建設業で元請工事がなく、現場労災を元請が負担する場合などに使う。
+   * 未指定(過去の明細)は適用として扱う。
+   */
+  rousaiApplied?: boolean;
+  /**
    * 源泉所得税の手動指定(円)。null/未指定なら自動計算。
    * 端数調整や特殊な控除を反映したいときに使う。
    */
@@ -312,7 +318,9 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   if (!input.isExecutive) {
     koyoEmployee = roundEmployeeShare(gross * (koyo.employee / 100));
     koyoEmployer = Math.round(gross * (koyo.employer / 100));
-    rousai = Math.round(gross * (input.rousaiRate / 100));
+    if (input.rousaiApplied !== false) {
+      rousai = Math.round(gross * (input.rousaiRate / 100));
+    }
   }
 
   // ---- 子ども・子育て拠出金(厚生年金の標準報酬月額 × 率・会社のみ) ----

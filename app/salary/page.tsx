@@ -12,7 +12,7 @@ import {
 import { useRequireLogin } from "../lib/auth";
 import { loadPeople, type Person } from "../lib/peopleStore";
 import { syncPeople, syncSalaryRecords } from "../lib/cloudSync";
-import { getCompanyPrefecture, setCompanyPrefecture, getRousaiCategoryKey, setRousaiCategoryKey } from "../lib/settingsStore";
+import { getCompanyPrefecture, setCompanyPrefecture, getRousaiCategoryKey, setRousaiCategoryKey, getRousaiApplied, setRousaiApplied } from "../lib/settingsStore";
 import { WEEKDAY_JA } from "../lib/jpHolidays";
 import {
   PREFECTURE_NAMES,
@@ -55,6 +55,7 @@ export default function SalaryPage() {
   const [kenrenKyosaiStr, setKenrenKyosaiStr] = useState("");
   const [koyoIndustry, setKoyoIndustry] = useState<KoyoIndustry>("construction");
   const [rousaiKey, setRousaiKey] = useState<string>(ROUSAI_DEFAULT_KEY);
+  const [rousaiApplied, setRousaiAppliedState] = useState(true);
 
   const [incomeTaxOverride, setIncomeTaxOverride] = useState<number | null>(null);
   const [taxOverrideStr, setTaxOverrideStr] = useState("");
@@ -82,6 +83,7 @@ export default function SalaryPage() {
   useEffect(() => {
     setPrefectureIndex(getCompanyPrefecture());
     setRousaiKey(getRousaiCategoryKey());
+    setRousaiAppliedState(getRousaiApplied());
     const loaded = loadSalaryRecords();
     setRecords(loaded);
     setPeople(loadPeople());
@@ -111,6 +113,7 @@ export default function SalaryPage() {
         setKenrenKyosaiStr(i.kenrenKyosai ? String(i.kenrenKyosai) : "");
         setKoyoIndustry(i.koyoIndustry ?? "construction");
         setRousaiKey(rousaiKeyFromRate(i.rousaiRate ?? 0.95));
+        setRousaiAppliedState(i.rousaiApplied !== false);
         setIncomeTaxOverride(i.incomeTaxOverride ?? null);
         setTaxOverrideStr(i.incomeTaxOverride != null ? String(i.incomeTaxOverride) : "");
         setNenmatsuRefundStr(i.nenmatsuRefund ? String(i.nenmatsuRefund) : "");
@@ -126,6 +129,8 @@ export default function SalaryPage() {
 
   const [depAutoNote, setDepAutoNote] = useState("");
   const depManualRef = useRef(false);
+  const [rousaiAutoNote, setRousaiAutoNote] = useState("");
+  const rousaiManualRef = useRef(false);
 
   /** その人の既存明細のうち最も新しい勤務月(通算)を返す。無ければ null */
   function latestWorkMonth(p: Person): number | null {
@@ -145,6 +150,7 @@ export default function SalaryPage() {
     setSelectedPersonId(id);
     setSaveMessage("");
     depManualRef.current = false; // 扶養人数を再び自動追従させる
+    rousaiManualRef.current = false; // 労災設定も前月の明細に自動追従させる
     const p = people.find((x) => x.id === id);
     if (p) {
       setName(p.name);
@@ -161,12 +167,12 @@ export default function SalaryPage() {
     }
   }
 
-  /** その人の「対象月より前」で最も新しい明細の扶養人数を探す */
-  function findPrevDependents(personId: string, wy: number, wm: number): number | null {
+  /** その人の「対象月より前」で最も新しい明細の入力内容を探す */
+  function findPrevInput(personId: string, wy: number, wm: number): PayrollInput | null {
     const p = people.find((x) => x.id === personId);
     if (!p) return null;
     const target = wy * 12 + (wm - 1);
-    let best: { ym: number; dep: number } | null = null;
+    let best: { ym: number; input: PayrollInput } | null = null;
     for (const r of records) {
       const match =
         (r.person && r.person.code === p.code) ||
@@ -174,22 +180,31 @@ export default function SalaryPage() {
       if (!match) continue;
       const ym = r.input.workYear * 12 + (r.input.workMonth - 1);
       if (ym >= target) continue;
-      if (!best || ym > best.ym) best = { ym, dep: r.input.dependents };
+      if (!best || ym > best.ym) best = { ym, input: r.input };
     }
-    return best ? best.dep : null;
+    return best ? best.input : null;
   }
 
-  // 人員選択時・勤務月変更時: 前月(以前)の明細から扶養人数を自動入力。
+  // 人員選択時・勤務月変更時: 前月(以前)の明細から扶養人数と
+  // 労災保険の設定(適用/適用外・事業の種類)を自動引き継ぎ。
   // 手動で修正した後は上書きしない。
   useEffect(() => {
-    if (!selectedPersonId || editingId || depManualRef.current) return;
-    const dep = findPrevDependents(selectedPersonId, workYear, workMonth);
-    if (dep !== null) {
-      setDependentsStr(String(dep));
-      setDepAutoNote(`前月までの明細から扶養親族等の数「${dep}人」を自動入力しました。`);
-    } else {
-      setDependentsStr("0");
-      setDepAutoNote("");
+    if (!selectedPersonId || editingId) return;
+    const prev = findPrevInput(selectedPersonId, workYear, workMonth);
+    if (!depManualRef.current) {
+      if (prev) {
+        setDependentsStr(String(prev.dependents));
+        setDepAutoNote(`前月までの明細から扶養親族等の数「${prev.dependents}人」を自動入力しました。`);
+      } else {
+        setDependentsStr("0");
+        setDepAutoNote("");
+      }
+    }
+    if (!rousaiManualRef.current && prev && prev.rousaiRate != null) {
+      const applied = prev.rousaiApplied !== false;
+      setRousaiAppliedState(applied);
+      setRousaiKey(rousaiKeyFromRate(prev.rousaiRate));
+      setRousaiAutoNote(`前月までの明細から労災保険「${applied ? "適用" : "適用外"}」を引き継ぎました。`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPersonId, workYear, workMonth, records, people]);
@@ -225,6 +240,7 @@ export default function SalaryPage() {
       kenrenKyosai,
       koyoIndustry,
       rousaiRate,
+      rousaiApplied,
       incomeTaxOverride,
       nenmatsuRefund,
       nenmatsuCollect,
@@ -232,7 +248,7 @@ export default function SalaryPage() {
   }, [
     name, birth, prefectureIndex, isExecutive, workYear, workMonth, paymentOffset,
     grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiKaigoMonthly, kumiaiFee, kenrenKyosai,
-    koyoIndustry, rousaiRate, incomeTaxOverride, nenmatsuRefund, nenmatsuCollect,
+    koyoIndustry, rousaiRate, rousaiApplied, incomeTaxOverride, nenmatsuRefund, nenmatsuCollect,
   ]);
 
   const result = useMemo(() => {
@@ -264,6 +280,8 @@ export default function SalaryPage() {
     setNenmatsuCollectStr("");
     setDepAutoNote("");
     depManualRef.current = false;
+    setRousaiAutoNote("");
+    rousaiManualRef.current = false;
     setEditingId(null);
     setEditingLabel("");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -558,20 +576,43 @@ export default function SalaryPage() {
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>労災保険(事業の種類・会社全額負担)</label>
-                  <select className={inputCls} value={rousaiKey}
-                    onChange={(e) => { setRousaiKey(e.target.value); setRousaiCategoryKey(e.target.value); }}>
-                    {ROUSAI_CATEGORIES.map((c) => (
-                      <option key={c.key} value={c.key}>{c.label}({c.rate}%)</option>
-                    ))}
-                  </select>
+                  <label className={labelCls}>労災保険</label>
+                  <div className="flex rounded-lg overflow-hidden border border-gray-300 mb-2">
+                    <button
+                      className={`flex-1 py-2 text-sm font-medium ${rousaiApplied ? "bg-blue-700 text-white" : "bg-white text-gray-600"}`}
+                      onClick={() => { setRousaiAppliedState(true); setRousaiApplied(true); rousaiManualRef.current = true; setRousaiAutoNote(""); }}
+                    >
+                      適用
+                    </button>
+                    <button
+                      className={`flex-1 py-2 text-sm font-medium ${!rousaiApplied ? "bg-blue-700 text-white" : "bg-white text-gray-600"}`}
+                      onClick={() => { setRousaiAppliedState(false); setRousaiApplied(false); rousaiManualRef.current = true; setRousaiAutoNote(""); }}
+                    >
+                      適用外
+                    </button>
+                  </div>
+                  {rousaiApplied ? (
+                    <select className={inputCls} value={rousaiKey}
+                      onChange={(e) => { setRousaiKey(e.target.value); setRousaiCategoryKey(e.target.value); rousaiManualRef.current = true; }}>
+                      {ROUSAI_CATEGORIES.map((c) => (
+                        <option key={c.key} value={c.key}>{c.label}({c.rate}%)</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      労災保険料を計上しません(0円)。下請工事のみで現場労災を元請が負担する場合など。
+                    </p>
+                  )}
+                  {rousaiAutoNote && <p className="text-xs text-green-700 mt-1">{rousaiAutoNote}</p>}
                 </div>
               </div>
               {result && (
                 <p className="text-xs text-gray-500 mt-3">
                   {KOYO_INDUSTRY_LABELS[koyoIndustry]}の雇用保険料率
                   (本人 {result.applied.koyoEmployeeRate}% / 会社 {result.applied.koyoEmployerRate}%)を適用中。
-                  労災保険率は厚労省の公式料率(令和6年4月改定・令和8年度も同率)を事業の種類から自動適用しています(現在 {rousaiRate}%)。
+                  {rousaiApplied
+                    ? `労災保険率は厚労省の公式料率(令和6年4月改定・令和8年度も同率)を事業の種類から自動適用しています(現在 ${rousaiRate}%)。`
+                    : "労災保険は「適用外」のため計上していません。"}
                 </p>
               )}
             </section>
@@ -620,28 +661,28 @@ export default function SalaryPage() {
                     </tr>
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">
-                        健康保険料{insuranceType === "kumiai" && "(全額本人負担)"}
+                        健康保険料{insuranceType === "kumiai" ? "(全額本人負担)" : `(${result.applied.kenpoRate}% 労使折半)`}
                       </td>
                       <td className="py-2 text-right text-red-600">-{yen(result.healthEmployee)}</td>
                     </tr>
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">
                         介護保険料{!result.kaigoApplied && "(40〜64歳のみ・対象外)"}
-                        {result.kaigoApplied && insuranceType === "kumiai" && "(全額本人負担)"}
+                        {result.kaigoApplied && (insuranceType === "kumiai" ? "(全額本人負担)" : `(${result.applied.kaigoRate}% 労使折半)`)}
                       </td>
                       <td className="py-2 text-right text-red-600">-{yen(result.kaigoEmployee)}</td>
                     </tr>
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">厚生年金保険料</td>
+                      <td className="py-2 text-gray-600">厚生年金保険料({result.applied.pensionRate}% 労使折半)</td>
                       <td className="py-2 text-right text-red-600">-{yen(result.pensionEmployee)}</td>
                     </tr>
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">雇用保険料{isExecutive && "(役員対象外)"}</td>
+                      <td className="py-2 text-gray-600">雇用保険料{isExecutive ? "(役員対象外)" : `(本人 ${result.applied.koyoEmployeeRate}%)`}</td>
                       <td className="py-2 text-right text-red-600">-{yen(result.koyoEmployee)}</td>
                     </tr>
                     {result.shienkinEmployee > 0 && (
                       <tr className="border-b">
-                        <td className="py-2 text-gray-600">子ども・子育て支援金</td>
+                        <td className="py-2 text-gray-600">子ども・子育て支援金({result.applied.shienkinRate}% 労使折半)</td>
                         <td className="py-2 text-right text-red-600">-{yen(result.shienkinEmployee)}</td>
                       </tr>
                     )}
@@ -720,18 +761,18 @@ export default function SalaryPage() {
                   <tbody>
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">
-                        健康保険料(会社分){insuranceType === "kumiai" && " ※全額本人負担のため0"}
+                        健康保険料(会社分){insuranceType === "kumiai" ? " ※全額本人負担のため0" : `(${result.applied.kenpoRate}% 労使折半)`}
                       </td>
                       <td className="py-2 text-right">{yen(result.healthEmployer)}</td>
                     </tr>
                     {insuranceType === "kyokai" && (
                       <tr className="border-b">
-                        <td className="py-2 text-gray-600">介護保険料(会社分)</td>
+                        <td className="py-2 text-gray-600">介護保険料(会社分){result.kaigoApplied && `(${result.applied.kaigoRate}% 労使折半)`}</td>
                         <td className="py-2 text-right">{yen(result.kaigoEmployer)}</td>
                       </tr>
                     )}
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">厚生年金保険料(会社分)</td>
+                      <td className="py-2 text-gray-600">厚生年金保険料(会社分)({result.applied.pensionRate}% 労使折半)</td>
                       <td className="py-2 text-right">{yen(result.pensionEmployer)}</td>
                     </tr>
                     <tr className="border-b">
@@ -739,7 +780,7 @@ export default function SalaryPage() {
                       <td className="py-2 text-right">{yen(result.koyoEmployer)}</td>
                     </tr>
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">労災保険料(全額会社)</td>
+                      <td className="py-2 text-gray-600">労災保険料{rousaiApplied ? `(全額会社 ${isExecutive ? "・役員対象外" : `${rousaiRate}%`})` : "(適用外)"}</td>
                       <td className="py-2 text-right">{yen(result.rousai)}</td>
                     </tr>
                     <tr className="border-b">
@@ -748,7 +789,7 @@ export default function SalaryPage() {
                     </tr>
                     {result.shienkinEmployer > 0 && (
                       <tr className="border-b">
-                        <td className="py-2 text-gray-600">子ども・子育て支援金(会社分)</td>
+                        <td className="py-2 text-gray-600">子ども・子育て支援金(会社分)({result.applied.shienkinRate}% 労使折半)</td>
                         <td className="py-2 text-right">{yen(result.shienkinEmployer)}</td>
                       </tr>
                     )}

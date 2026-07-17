@@ -32,3 +32,19 @@ export function setRousaiCategoryKey(key: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(ROUSAI_KEY, key);
 }
+
+const ROUSAI_APPLIED_KEY = "rousaiApplied";
+
+/**
+ * 労災保険の適用/適用外(会社設定)。既定は適用。
+ * 下請のみで現場労災を元請が負担する場合は「適用外」にする。
+ */
+export function getRousaiApplied(): boolean {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(ROUSAI_APPLIED_KEY) !== "false";
+}
+
+export function setRousaiApplied(applied: boolean): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(ROUSAI_APPLIED_KEY, applied ? "true" : "false");
+}

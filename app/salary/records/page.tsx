@@ -309,6 +309,11 @@ export default function SalaryRecordsPage() {
 }
 
 function DetailBlock({ r }: { r: SalaryRecord }) {
+  // 保存時に確定した公式料率(payrollRates.ts の年度別データ由来)
+  const a = r.result.applied;
+  const kyokai = r.input.insuranceType === "kyokai";
+  const exec = r.input.isExecutive;
+  const pct = (v: number | undefined) => (v != null ? `(${v}% 労使折半)` : "");
   return (
     <div className="mt-4 pt-4 border-t border-dashed">
       <h3 className="font-bold text-gray-800 mb-1 border-l-4 border-green-600 pl-2">
@@ -334,13 +339,13 @@ function DetailBlock({ r }: { r: SalaryRecord }) {
           <table className="w-full text-sm">
             <tbody>
               <tr className="border-b"><td className="py-1.5 text-gray-600">総支給額</td><td className="py-1.5 text-right">{yen(r.input.grossSalary)}</td></tr>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">健康保険料</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.healthEmployee)}</td></tr>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">介護保険料</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.kaigoEmployee)}</td></tr>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">厚生年金保険料</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.pensionEmployee)}</td></tr>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">雇用保険料</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.koyoEmployee)}</td></tr>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">源泉所得税</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.incomeTax)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">健康保険料{kyokai ? pct(a?.kenpoRate) : "(全額本人負担)"}</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.healthEmployee)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">介護保険料{r.result.kaigoApplied && kyokai && pct(a?.kaigoRate)}</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.kaigoEmployee)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">厚生年金保険料{pct(a?.pensionRate)}</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.pensionEmployee)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">雇用保険料{!exec && a && `(本人 ${a.koyoEmployeeRate}%)`}</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.koyoEmployee)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">源泉所得税{a && `(${a.taxYear}年分)`}</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.incomeTax)}</td></tr>
               {(r.result.shienkinEmployee ?? 0) > 0 && (
-                <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て支援金</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.shienkinEmployee)}</td></tr>
+                <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て支援金{pct(a?.shienkinRate)}</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.shienkinEmployee)}</td></tr>
               )}
               {r.result.kumiaiFee > 0 && (
                 <tr className="border-b"><td className="py-1.5 text-gray-600">組合費</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.kumiaiFee)}</td></tr>
@@ -358,14 +363,14 @@ function DetailBlock({ r }: { r: SalaryRecord }) {
           <h4 className="text-sm font-bold text-gray-700 mb-2">会社負担</h4>
           <table className="w-full text-sm">
             <tbody>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">健康保険料(会社分)</td><td className="py-1.5 text-right">{yen(r.result.healthEmployer)}</td></tr>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">介護保険料(会社分)</td><td className="py-1.5 text-right">{yen(r.result.kaigoEmployer)}</td></tr>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">厚生年金保険料(会社分)</td><td className="py-1.5 text-right">{yen(r.result.pensionEmployer)}</td></tr>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">雇用保険料(会社分)</td><td className="py-1.5 text-right">{yen(r.result.koyoEmployer)}</td></tr>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">労災保険料</td><td className="py-1.5 text-right">{yen(r.result.rousai)}</td></tr>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て拠出金</td><td className="py-1.5 text-right">{yen(r.result.kodomoContribution)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">健康保険料(会社分){kyokai && pct(a?.kenpoRate)}</td><td className="py-1.5 text-right">{yen(r.result.healthEmployer)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">介護保険料(会社分){r.result.kaigoApplied && kyokai && pct(a?.kaigoRate)}</td><td className="py-1.5 text-right">{yen(r.result.kaigoEmployer)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">厚生年金保険料(会社分){pct(a?.pensionRate)}</td><td className="py-1.5 text-right">{yen(r.result.pensionEmployer)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">雇用保険料(会社分){!exec && a && `(${a.koyoEmployerRate}%)`}</td><td className="py-1.5 text-right">{yen(r.result.koyoEmployer)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">労災保険料{r.input.rousaiApplied === false ? "(適用外)" : !exec && r.input.rousaiRate != null ? `(${r.input.rousaiRate}%)` : ""}</td><td className="py-1.5 text-right">{yen(r.result.rousai)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て拠出金{a && `(${a.kodomoRate}%)`}</td><td className="py-1.5 text-right">{yen(r.result.kodomoContribution)}</td></tr>
               {(r.result.shienkinEmployer ?? 0) > 0 && (
-                <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て支援金(会社分)</td><td className="py-1.5 text-right">{yen(r.result.shienkinEmployer)}</td></tr>
+                <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て支援金(会社分){pct(a?.shienkinRate)}</td><td className="py-1.5 text-right">{yen(r.result.shienkinEmployer)}</td></tr>
               )}
               <tr className="border-b"><td className="py-1.5 font-bold">会社負担合計</td><td className="py-1.5 text-right font-bold text-orange-600">{yen(r.result.totalEmployerBurden)}</td></tr>
               <tr><td className="py-2 font-bold">コスト合計</td><td className="py-2 text-right font-bold text-lg">{yen(recordCost(r))}</td></tr>
