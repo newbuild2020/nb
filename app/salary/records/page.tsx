@@ -349,7 +349,19 @@ export default function SalaryRecordsPage() {
                             <td className="py-2 pr-4 text-right font-medium text-green-700">{yen(r.result.netPay)}</td>
                             <td className="py-2 pr-4 text-right">{yen(recordCost(r))}</td>
                             <td className="py-2 text-right whitespace-nowrap">
-                              <button className="text-blue-700 hover:underline mr-3" onClick={() => setOpenId(openId === r.id ? null : r.id)}>
+                              <button
+                                className="text-blue-700 hover:underline mr-3"
+                                onClick={() => {
+                                  const next = openId === r.id ? null : r.id;
+                                  setOpenId(next);
+                                  // 開いた詳細は表の下に描画されるため、描画後にそこへ自動スクロール
+                                  if (next) {
+                                    setTimeout(() => {
+                                      document.getElementById(`detail-${next}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                    }, 80);
+                                  }
+                                }}
+                              >
                                 {openId === r.id ? "閉じる" : "詳細"}
                               </button>
                               <button
@@ -407,7 +419,7 @@ function DetailBlock({ r }: { r: SalaryRecord }) {
   const exec = r.input.isExecutive;
   const pct = (v: number | undefined) => (v != null ? `(${v}% 労使折半)` : "");
   return (
-    <div className="mt-4 pt-4 border-t border-dashed">
+    <div id={`detail-${r.id}`} className="mt-4 pt-4 border-t border-dashed scroll-mt-20">
       <h3 className="font-bold text-gray-800 mb-1 border-l-4 border-green-600 pl-2">
         {r.input.name} 様 {r.result.paymentYear}年{r.result.paymentMonth}月支給分
         (勤務月 {r.input.workYear}年{r.input.workMonth}月)
