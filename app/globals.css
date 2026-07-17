@@ -3,38 +3,101 @@
 @tailwind utilities;
 
 /*
- * このアプリ(給与・社会保険の業務ツール)は全ページで統一した
- * ライトテーマに固定する。端末がダークモードでも、赤字のマイナス金額・
- * 緑の在職バッジ・料率表などが常に同じ見え方になるようにするため。
- * color-scheme: light により、日付・セレクトなどのネイティブ入力も
- * ダーク端末で文字が薄くならず、常に読みやすく表示される。
+ * テーマ: 端末設定に自動追従(ライト/ダーク)。
+ * ページ側は Tailwind のライト用クラス(bg-white 等)で書かれており、
+ * ダークモードではこのファイルの @media (prefers-color-scheme: dark)
+ * ブロックが同名クラスを一括で暗色に置き換える。
+ * 全ページ共通で1箇所だけを管理すればよい方式。
  */
 :root {
-  color-scheme: light;
-  --background: #ffffff;
-  --foreground: #222222;
-  --primary: #222222;
-  --secondary: #f5f5f7;
-  --accent: #38bdf8;
-}
-
-html {
   color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* 日付入力はダーク端末でも文字・カレンダーアイコンが見えるように */
+/*
+ * 日付入力: appearance を外すと iOS で高さが潰れるため、
+ * ネイティブ外観のまま最小高さだけ他の入力欄(py-2 + text-base)に合わせる。
+ */
 input[type="date"] {
-  -webkit-appearance: none;
-  appearance: none;
-  color: #222222;
-  background-color: #ffffff;
+  min-height: 2.625rem;
 }
-input[type="date"]::-webkit-calendar-picker-indicator {
-  opacity: 0.6;
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+/* ============ ダークモード(端末設定に追従) ============ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+
+  /* 面 */
+  .bg-gray-100 { background-color: #0f141c; }
+  .bg-gray-50 { background-color: #151c27; }
+  .bg-white { background-color: #1a2230; }
+  .bg-gray-200 { background-color: #2c3547; }
+
+  /* 文字 */
+  .text-black { color: #f2f5f9; }
+  .text-gray-900 { color: #f2f5f9; }
+  .text-gray-800 { color: #e5eaf1; }
+  .text-gray-700 { color: #cdd6e1; }
+  .text-gray-600 { color: #9fb0c3; }
+  .text-gray-500 { color: #8494a9; }
+  .text-gray-400 { color: #66768c; }
+
+  /* 汎用ボーダー(:whereで詳細度0にし、色付きborder-*クラスを優先させる) */
+  :where(.border, .border-b, .border-t, .border-l, .border-r, .border-dashed) {
+    border-color: #273246;
+  }
+  .border-gray-200 { border-color: #273246; }
+  .border-gray-300 { border-color: #344259; }
+  .border-gray-500 { border-color: #526075; }
+
+  /* 青系(ヘッダー・主ボタンの bg-blue-700/800 はそのまま) */
+  .text-blue-700 { color: #7cb0fa; }
+  .text-blue-800 { color: #93c5fd; }
+  .text-blue-900 { color: #bfdbfe; }
+  .bg-blue-50 { background-color: #1a2740; }
+  .border-blue-200 { border-color: #2c4577; }
+  .border-blue-300 { border-color: #31518f; }
+
+  /* 緑系(手取り・在職・保存バナー) */
+  .text-green-700 { color: #4ade80; }
+  .text-green-800 { color: #86efac; }
+  .bg-green-50 { background-color: #132a1c; }
+  .bg-green-100 { background-color: #1b3b28; }
+  .border-green-300 { border-color: #265d3b; }
+  .border-green-400 { border-color: #2e7047; }
+
+  /* 赤系(控除・削除) */
+  .text-red-600 { color: #f87171; }
+  .border-red-200 { border-color: #7f2c3a; }
+
+  /* 琥珀系(注意書き) */
+  .text-amber-600 { color: #fbbf24; }
+  .text-amber-800 { color: #fcd34d; }
+  .bg-amber-50 { background-color: #2b2110; }
+  .border-amber-200 { border-color: #6b4e14; }
+  .border-amber-300 { border-color: #7c5c16; }
+
+  /* 橙系(会社負担) */
+  .text-orange-600 { color: #fb923c; }
+  .text-orange-700 { color: #fdba74; }
+  .bg-orange-50 { background-color: #2b1a10; }
+  .border-orange-300 { border-color: #8a4a1f; }
+
+  /* ログインボタン(ライトでは黒、ダークでは白反転) */
+  .bg-black { background-color: #f2f5f9; }
+  .bg-black.text-white { color: #0f141c; }
+
+  /* ホバー */
+  .hover\:bg-gray-50:hover { background-color: #202a3a; }
+  .hover\:bg-gray-100:hover { background-color: #202a3a; }
+
+  /* 入力欄のプレースホルダー */
+  ::placeholder { color: #66768c; opacity: 1; }
 }
