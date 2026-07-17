@@ -114,6 +114,19 @@ async function downloadExcel(
 }
 
 /**
+ * 列見出しに公式料率(%)を埋め込む。
+ * 出力対象の全明細で率が同じなら「9.92%」、年度をまたいで
+ * 異なる場合は「9.91〜9.92%」のように範囲で表示する。
+ * 率で計算していない明細(定額の組合保険など)は無視する。
+ */
+function rateHeader(base: string, values: (number | string)[], note = ""): string {
+  const nums = [...new Set(values.filter((v): v is number => typeof v === "number"))];
+  if (nums.length === 0) return base;
+  const label = nums.length === 1 ? `${nums[0]}%` : `${Math.min(...nums)}〜${Math.max(...nums)}%`;
+  return `${base}(${label}${note ? " " + note : ""})`;
+}
+
+/**
  * 明細に実際に適用された公式料率(%)。payrollRates.ts の
  * 年度別公式データから計算時に確定した値(result.applied)をそのまま使う。
  * 率で計算していない項目(定額の組合保険・役員の雇用/労災など)は空欄。
@@ -146,21 +159,24 @@ function appliedRateCols(r: SalaryRecord): {
   };
 }
 
-/** 全明細をExcel(オートフィルタ付き)としてダウンロード */
+/**
+ * 全明細をExcel(オートフィルタ付き)としてダウンロード。
+ * 正規の給与明細として本人向けの項目のみを出力する。
+ * 会社負担分(会社分保険料・労災・拠出金・会社負担合計など)は
+ * 含めない — それらは「コスト出力」で確認する。
+ */
 export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string[]): void {
+  const rates = records.map(appliedRateCols);
   const header = [
     "保存日時", "管理番号", "氏名", "生年月日", "職務", "住所", "入社日", "地域", "区分", "勤務月", "支給日", "適用年度",
     "総支給額",
-    "健康保険料", "健康保険料率%(労使折半)",
-    "介護保険料", "介護保険料率%(労使折半)",
-    "厚生年金保険料", "厚生年金保険料率%(労使折半)",
-    "雇用保険料", "雇用保険料率%(本人)",
-    "源泉所得税", "支援金(本人)", "支援金率%(労使折半)",
+    rateHeader("健康保険料", rates.map((x) => x.kenpo), "労使折半"),
+    rateHeader("介護保険料", rates.map((x) => x.kaigo), "労使折半"),
+    rateHeader("厚生年金保険料", rates.map((x) => x.pension), "労使折半"),
+    rateHeader("雇用保険料", rates.map((x) => x.koyoEmp), "本人分"),
+    "源泉所得税",
+    rateHeader("支援金(本人)", rates.map((x) => x.shienkin), "労使折半"),
     "組合費", "県連共済費", "年末調整還付", "年末調整徴収", "控除合計", "手取り金額",
-    "健康保険(会社)", "介護保険(会社)", "厚生年金(会社)", "雇用保険(会社)", "雇用保険料率%(会社)",
-    "労災保険", "労災保険料率%",
-    "子ども・子育て拠出金", "拠出金率%",
-    "支援金(会社)", "会社負担合計", "会社総コスト",
   ];
   const rows = records.map((r) => {
     const i = r.input;
@@ -180,27 +196,18 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
       `${s.paymentYear}/${String(s.paymentMonth).padStart(2, "0")}${s.paymentDay ? "/" + String(s.paymentDay).padStart(2, "0") : ""}`,
       rate.fiscalLabel,
       i.grossSalary,
-      s.healthEmployee, rate.kenpo,
-      s.kaigoEmployee, rate.kaigo,
-      s.pensionEmployee, rate.pension,
-      s.koyoEmployee, rate.koyoEmp,
+      s.healthEmployee,
+      s.kaigoEmployee,
+      s.pensionEmployee,
+      s.koyoEmployee,
       s.incomeTax,
-      s.shienkinEmployee ?? 0, rate.shienkin,
+      s.shienkinEmployee ?? 0,
       s.kumiaiFee,
       s.kenrenKyosai ?? 0,
       s.nenmatsuRefund ?? 0,
       s.nenmatsuCollect ?? 0,
       s.totalEmployeeDeduction,
       s.netPay,
-      s.healthEmployer,
-      s.kaigoEmployer,
-      s.pensionEmployer,
-      s.koyoEmployer, rate.koyoComp,
-      s.rousai, rate.rousai,
-      s.kodomoContribution, rate.kodomo,
-      s.shienkinEmployer ?? 0,
-      s.totalEmployerBurden,
-      s.totalCompanyCost,
     ];
   });
   void downloadExcel(header, rows, "給与明細", "給与明細");
@@ -219,39 +226,41 @@ export function recordCost(r: SalaryRecord): number {
   );
 }
 
-/** コストを人名付きでExcel出力(各項目の内訳・適用公式料率と合計) */
+/** コストを人名付きでExcel出力(各項目の内訳と合計。公式料率は列見出しに表示) */
 export function exportCostCsv(records: SalaryRecord[]): void {
+  const rates = records.map(appliedRateCols);
   const header = [
     "管理番号", "氏名", "勤務月", "支給日", "適用年度",
-    "健康保険料", "健康保険料率%(労使折半)",
-    "介護保険料", "介護保険料率%(労使折半)",
-    "厚生年金保険料", "厚生年金保険料率%(労使折半)",
-    "雇用保険料", "雇用保険料率%(本人)",
-    "源泉所得税", "支援金(本人)", "支援金率%(労使折半)", "組合費", "県連共済費",
+    rateHeader("健康保険料", rates.map((x) => x.kenpo), "労使折半"),
+    rateHeader("介護保険料", rates.map((x) => x.kaigo), "労使折半"),
+    rateHeader("厚生年金保険料", rates.map((x) => x.pension), "労使折半"),
+    rateHeader("雇用保険料", rates.map((x) => x.koyoEmp), "本人分"),
+    "源泉所得税",
+    rateHeader("支援金(本人)", rates.map((x) => x.shienkin), "労使折半"),
+    "組合費", "県連共済費",
     "健康保険料(会社分)", "介護保険料(会社分)", "厚生年金保険料(会社分)",
-    "雇用保険料(会社分)", "雇用保険料率%(会社)",
-    "労災保険料", "労災保険料率%",
-    "子ども・子育て拠出金", "拠出金率%",
+    rateHeader("雇用保険料(会社分)", rates.map((x) => x.koyoComp)),
+    rateHeader("労災保険料", rates.map((x) => x.rousai)),
+    rateHeader("子ども・子育て拠出金", rates.map((x) => x.kodomo)),
     "支援金(会社)", "年末調整還付", "年末調整徴収", "コスト合計",
   ];
   const rows = records.map((r) => {
     const s = r.result;
-    const rate = appliedRateCols(r);
     return [
       r.person?.code ?? "",
       r.input.name,
       `${r.input.workYear}/${String(r.input.workMonth).padStart(2, "0")}`,
       `${s.paymentYear}/${String(s.paymentMonth).padStart(2, "0")}${s.paymentDay ? "/" + String(s.paymentDay).padStart(2, "0") : ""}`,
-      rate.fiscalLabel,
-      s.healthEmployee, rate.kenpo,
-      s.kaigoEmployee, rate.kaigo,
-      s.pensionEmployee, rate.pension,
-      s.koyoEmployee, rate.koyoEmp,
-      s.incomeTax, s.shienkinEmployee ?? 0, rate.shienkin, s.kumiaiFee, s.kenrenKyosai ?? 0,
+      appliedRateCols(r).fiscalLabel,
+      s.healthEmployee,
+      s.kaigoEmployee,
+      s.pensionEmployee,
+      s.koyoEmployee,
+      s.incomeTax, s.shienkinEmployee ?? 0, s.kumiaiFee, s.kenrenKyosai ?? 0,
       s.healthEmployer, s.kaigoEmployer, s.pensionEmployer,
-      s.koyoEmployer, rate.koyoComp,
-      s.rousai, rate.rousai,
-      s.kodomoContribution, rate.kodomo,
+      s.koyoEmployer,
+      s.rousai,
+      s.kodomoContribution,
       s.shienkinEmployer ?? 0, s.nenmatsuRefund ?? 0, s.nenmatsuCollect ?? 0,
       recordCost(r),
     ];
