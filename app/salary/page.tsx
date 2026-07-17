@@ -668,6 +668,7 @@ export default function SalaryPage() {
                   <div>子ども・子育て拠出金: {result.applied.kodomoRate}%(会社のみ)</div>
                   {!isExecutive && <div>雇用保険 本人: {result.applied.koyoEmployeeRate}%({KOYO_INDUSTRY_LABELS[koyoIndustry]})</div>}
                   {!isExecutive && <div>雇用保険 会社: {result.applied.koyoEmployerRate}%</div>}
+                  {isExecutive && <div>雇用保険・労災保険: 役員対象外</div>}
                   <div>所得税: {result.applied.taxYear}年分の計算式</div>
                 </div>
               </section>
@@ -813,7 +814,7 @@ export default function SalaryPage() {
                       <td className="py-2 text-right whitespace-nowrap">{yen(result.kodomoContribution)}</td>
                     </tr>
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">雇用保険料(会社分 {result.applied.koyoEmployerRate}%)</td>
+                      <td className="py-2 text-gray-600">雇用保険料{isExecutive ? "(役員対象外)" : `(会社分 ${result.applied.koyoEmployerRate}%)`}</td>
                       <td className="py-2 text-right whitespace-nowrap">{yen(result.koyoEmployer)}</td>
                     </tr>
                     <tr className="border-b">
