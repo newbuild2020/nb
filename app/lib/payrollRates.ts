@@ -306,11 +306,17 @@ export function shienkinRate(year: number, month: number): number {
 
 // ============ 厚生年金 標準報酬月額の等級範囲 ============
 
-/** 厚生年金の下限・上限標準報酬月額(改定履歴込み) */
+/** 厚生年金の下限・上限標準報酬月額(改定履歴・確定済みの将来改定込み) */
 export function pensionSmrRange(year: number, month: number): { min: number; max: number } {
   const ym = year * 12 + (month - 1);
   const min = ym >= 2016 * 12 + 9 ? 88000 : 98000;  // 平成28年10月分〜 第1等級88,000円
-  const max = ym >= 2020 * 12 + 8 ? 650000 : 620000; // 令和2年9月分〜 上限650,000円
+  // 上限: 令和2年9月〜65万。2025年年金制度改正により段階的引上げが確定済み
+  let max: number;
+  if (ym >= 2029 * 12 + 8) max = 750000;      // 2029年9月分〜
+  else if (ym >= 2028 * 12 + 8) max = 710000; // 2028年9月分〜
+  else if (ym >= 2027 * 12 + 8) max = 680000; // 2027年9月分〜
+  else if (ym >= 2020 * 12 + 8) max = 650000; // 令和2年9月分〜
+  else max = 620000;
   return { min, max };
 }
 
