@@ -47,6 +47,7 @@ export default function SalaryRecordsPage() {
   const [groupMode, setGroupMode] = useState<GroupMode>("month");
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
+  const [filterName, setFilterName] = useState("");
   // 既定は全グループ折りたたみ。展開したものだけ true を持つ
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -61,17 +62,23 @@ export default function SalaryRecordsPage() {
     if (openId === r.id) setOpenId(null);
   }
 
-  // ---- 絞り込み(勤務月の範囲) ----
+  // ---- 絞り込み(勤務月の範囲 + 氏名/管理番号) ----
   const filtered = useMemo(() => {
     const from = parseMonth(filterFrom);
     const to = parseMonth(filterTo);
+    const q = filterName.trim().toLowerCase();
     return records.filter((r) => {
       const k = workKey(r);
       if (from !== null && k < from) return false;
       if (to !== null && k > to) return false;
+      if (q) {
+        const name = r.input.name.toLowerCase();
+        const code = (r.person?.code ?? "").toLowerCase();
+        if (!name.includes(q) && !code.includes(q)) return false;
+      }
       return true;
     });
-  }, [records, filterFrom, filterTo]);
+  }, [records, filterFrom, filterTo, filterName]);
 
   // ---- 並び替え/グループ化(ツリー) ----
   const groups = useMemo(() => {
@@ -141,8 +148,8 @@ export default function SalaryRecordsPage() {
             </button>
           </div>
 
-          {/* 絞り込み(勤務月 範囲) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          {/* 絞り込み(勤務月 範囲 + 氏名/管理番号) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <div>
               <label className="block text-xs text-gray-500 mb-1">勤務月(開始)</label>
               <input type="month" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
@@ -153,9 +160,15 @@ export default function SalaryRecordsPage() {
               <input type="month" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
                 value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
             </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">氏名・管理番号で検索</label>
+              <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                placeholder="例: 王鑫 / NB-01"
+                value={filterName} onChange={(e) => setFilterName(e.target.value)} />
+            </div>
           </div>
-          {(filterFrom || filterTo) && (
-            <button className="text-xs text-blue-700 underline mb-4" onClick={() => { setFilterFrom(""); setFilterTo(""); }}>
+          {(filterFrom || filterTo || filterName) && (
+            <button className="text-xs text-blue-700 underline mb-4" onClick={() => { setFilterFrom(""); setFilterTo(""); setFilterName(""); }}>
               絞り込みを解除
             </button>
           )}
