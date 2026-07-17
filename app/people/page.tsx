@@ -198,7 +198,7 @@ export default function PeoplePage() {
                 onChange={(e) => { setHireDate(e.target.value); setError(""); }} />
             </div>
             <div>
-              <label className={labelCls}>都道府県(給与計算の地域)</label>
+              <label className={labelCls}>都道府県(住所)</label>
               <select className={inputCls} value={prefectureIndex} onChange={(e) => setPrefectureIndex(Number(e.target.value))}>
                 {PREFECTURE_NAMES.map((p, i) => (
                   <option key={p} value={i}>{p}</option>

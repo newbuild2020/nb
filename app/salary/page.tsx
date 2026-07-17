@@ -12,6 +12,7 @@ import {
 import { useRequireLogin } from "../lib/auth";
 import { loadPeople, type Person } from "../lib/peopleStore";
 import { syncPeople, syncSalaryRecords } from "../lib/cloudSync";
+import { getCompanyPrefecture, setCompanyPrefecture } from "../lib/settingsStore";
 import {
   PREFECTURE_NAMES,
   KENPO_MIN_YEAR,
@@ -36,7 +37,8 @@ export default function SalaryPage() {
 
   const [name, setName] = useState("");
   const [birth, setBirth] = useState("1990-01-01");
-  const [prefectureIndex, setPrefectureIndex] = useState(12); // 東京都
+  // 協会けんぽの都道府県 = 会社(事業所)の所在地。従業員個人の住所ではない。
+  const [prefectureIndex, setPrefectureIndex] = useState(13); // 会社所在地(神奈川県・既定)
   const [isExecutive, setIsExecutive] = useState(false);
   const [workYear, setWorkYear] = useState(now.getFullYear());
   const [workMonth, setWorkMonth] = useState(now.getMonth() + 1);
@@ -68,6 +70,7 @@ export default function SalaryPage() {
   const [editingLabel, setEditingLabel] = useState("");
 
   useEffect(() => {
+    setPrefectureIndex(getCompanyPrefecture());
     const loaded = loadSalaryRecords();
     setRecords(loaded);
     setPeople(loadPeople());
@@ -117,7 +120,7 @@ export default function SalaryPage() {
     if (p) {
       setName(p.name);
       setBirth(p.birth);
-      setPrefectureIndex(p.prefectureIndex);
+      // 健康保険料率は会社所在地で決まるため、従業員の住所では上書きしない
       setIsExecutive(p.role === "executive");
     }
   }
@@ -299,12 +302,15 @@ export default function SalaryPage() {
                 <input type="date" className={inputCls} value={birth} onChange={(e) => setBirth(e.target.value)} />
               </div>
               <div>
-                <label className={labelCls}>地域(都道府県)</label>
-                <select className={inputCls} value={prefectureIndex} onChange={(e) => setPrefectureIndex(Number(e.target.value))}>
+                <label className={labelCls}>会社所在地(協会けんぽの都道府県)</label>
+                <select className={inputCls} value={prefectureIndex} onChange={(e) => { const v = Number(e.target.value); setPrefectureIndex(v); setCompanyPrefecture(v); }}>
                   {PREFECTURE_NAMES.map((p, i) => (
                     <option key={p} value={i}>{p}</option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  ※ 協会けんぽの健康保険料率は会社(事業所)の所在地で決まります。従業員個人の住所ではありません。一度設定すると次回以降も保持されます。
+                </p>
               </div>
               <div>
                 <label className={labelCls}>区分</label>
