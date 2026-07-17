@@ -142,11 +142,12 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
   downloadCsv(csv, "給与明細");
 }
 
-/** 1明細の「コスト」= 指定された13項目の合計 */
+/** 1明細の「コスト」= 各項目の合計(組合費を含む) */
 export function recordCost(r: SalaryRecord): number {
   const s = r.result;
   return (
     s.healthEmployee + s.kaigoEmployee + s.pensionEmployee + s.koyoEmployee + s.incomeTax +
+    s.kumiaiFee +
     s.healthEmployer + s.kaigoEmployer + s.pensionEmployer + s.koyoEmployer +
     s.rousai + s.kodomoContribution +
     (s.nenmatsuRefund ?? 0) + (s.nenmatsuCollect ?? 0)
@@ -157,7 +158,7 @@ export function recordCost(r: SalaryRecord): number {
 export function exportCostCsv(records: SalaryRecord[]): void {
   const header = [
     "管理番号", "氏名", "勤務月", "支給日",
-    "健康保険料", "介護保険料", "厚生年金保険料", "雇用保険料", "源泉所得税",
+    "健康保険料", "介護保険料", "厚生年金保険料", "雇用保険料", "源泉所得税", "組合費",
     "健康保険料(会社分)", "介護保険料(会社分)", "厚生年金保険料(会社分)", "雇用保険料(会社分)",
     "労災保険料", "子ども・子育て拠出金", "年末調整還付", "年末調整徴収", "コスト合計",
   ];
@@ -168,7 +169,7 @@ export function exportCostCsv(records: SalaryRecord[]): void {
       r.input.name,
       `${r.input.workYear}/${String(r.input.workMonth).padStart(2, "0")}`,
       `${s.paymentYear}/${String(s.paymentMonth).padStart(2, "0")}${s.paymentDay ? "/" + String(s.paymentDay).padStart(2, "0") : ""}`,
-      s.healthEmployee, s.kaigoEmployee, s.pensionEmployee, s.koyoEmployee, s.incomeTax,
+      s.healthEmployee, s.kaigoEmployee, s.pensionEmployee, s.koyoEmployee, s.incomeTax, s.kumiaiFee,
       s.healthEmployer, s.kaigoEmployer, s.pensionEmployer, s.koyoEmployer,
       s.rousai, s.kodomoContribution, s.nenmatsuRefund ?? 0, s.nenmatsuCollect ?? 0,
       recordCost(r),
