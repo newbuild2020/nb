@@ -91,7 +91,29 @@ export function overwriteSalaryRecords(list: SalaryRecord[]): void {
   localStorage.setItem(KEY, JSON.stringify(sorted));
 }
 
-/** 全明細をCSV(Excel対応・UTF-8 BOM付き)としてダウンロード */
+/**
+ * ヘッダー行にオートフィルタ(クリックで並べ替え・絞り込み)付きの
+ * Excelファイル(.xlsx)としてダウンロードする。
+ */
+async function downloadExcel(
+  header: string[],
+  rows: (string | number)[][],
+  prefix: string,
+  sheetName: string
+): Promise<void> {
+  const XLSX = await import("xlsx");
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  // 全列にオートフィルタ(氏名・勤務月などをクリックで並べ替え可能)
+  ws["!autofilter"] = {
+    ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: header.length - 1 } }),
+  };
+  ws["!cols"] = header.map((h) => ({ wch: Math.max(10, h.length * 2 + 2) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, `${prefix}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+/** 全明細をExcel(オートフィルタ付き)としてダウンロード */
 export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string[]): void {
   const header = [
     "保存日時", "管理番号", "氏名", "生年月日", "職務", "住所", "入社日", "地域", "区分", "勤務月", "支給日",
@@ -139,10 +161,7 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
       s.totalCompanyCost,
     ];
   });
-  const csv = [header, ...rows]
-    .map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
-    .join("\r\n");
-  downloadCsv(csv, "給与明細");
+  void downloadExcel(header, rows, "給与明細", "給与明細");
 }
 
 /** 1明細の「コスト」= 各項目の合計(組合費を含む) */
@@ -179,10 +198,7 @@ export function exportCostCsv(records: SalaryRecord[]): void {
       recordCost(r),
     ];
   });
-  const csv = [header, ...rows]
-    .map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
-    .join("\r\n");
-  downloadCsv(csv, "コスト");
+  void downloadExcel(header, rows, "コスト", "コスト");
 }
 
 /**
@@ -201,17 +217,6 @@ export function exportBackupJson(people: unknown[], records: SalaryRecord[]): vo
   const a = document.createElement("a");
   a.href = url;
   a.download = `給料データバックアップ_${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-/** CSV文字列をUTF-8 BOM付きでダウンロード */
-function downloadCsv(csv: string, prefix: string): void {
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${prefix}_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }

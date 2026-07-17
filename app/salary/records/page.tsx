@@ -202,7 +202,7 @@ export default function SalaryRecordsPage() {
               disabled={filteredCount === 0}
               onClick={() => exportSalaryCsv(exportList, PREFECTURE_NAMES)}
             >
-              CSV出力({filteredCount}件)
+              Excel出力({filteredCount}件)
             </button>
             <button
               className="px-4 py-2 rounded-lg border border-orange-300 text-sm text-orange-700 hover:bg-orange-50 disabled:opacity-40"
