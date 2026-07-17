@@ -96,9 +96,9 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
   const header = [
     "保存日時", "管理番号", "氏名", "生年月日", "職務", "住所", "入社日", "地域", "区分", "勤務月", "支給日",
     "総支給額", "健康保険料", "介護保険料", "厚生年金保険料", "雇用保険料",
-    "源泉所得税", "組合費", "県連共済費", "年末調整還付", "年末調整徴収", "控除合計", "手取り金額",
+    "源泉所得税", "支援金(本人)", "組合費", "県連共済費", "年末調整還付", "年末調整徴収", "控除合計", "手取り金額",
     "健康保険(会社)", "介護保険(会社)", "厚生年金(会社)", "雇用保険(会社)",
-    "労災保険", "子ども・子育て拠出金", "会社負担合計", "会社総コスト",
+    "労災保険", "子ども・子育て拠出金", "支援金(会社)", "会社負担合計", "会社総コスト",
   ];
   const rows = records.map((r) => {
     const i = r.input;
@@ -121,6 +121,7 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
       s.pensionEmployee,
       s.koyoEmployee,
       s.incomeTax,
+      s.shienkinEmployee ?? 0,
       s.kumiaiFee,
       s.kenrenKyosai ?? 0,
       s.nenmatsuRefund ?? 0,
@@ -133,6 +134,7 @@ export function exportSalaryCsv(records: SalaryRecord[], prefectureNames: string
       s.koyoEmployer,
       s.rousai,
       s.kodomoContribution,
+      s.shienkinEmployer ?? 0,
       s.totalEmployerBurden,
       s.totalCompanyCost,
     ];
@@ -151,6 +153,7 @@ export function recordCost(r: SalaryRecord): number {
     s.kumiaiFee + s.kenrenKyosai +
     s.healthEmployer + s.kaigoEmployer + s.pensionEmployer + s.koyoEmployer +
     s.rousai + s.kodomoContribution +
+    (s.shienkinEmployee ?? 0) + (s.shienkinEmployer ?? 0) +
     (s.nenmatsuRefund ?? 0) + (s.nenmatsuCollect ?? 0)
   );
 }
@@ -159,9 +162,9 @@ export function recordCost(r: SalaryRecord): number {
 export function exportCostCsv(records: SalaryRecord[]): void {
   const header = [
     "管理番号", "氏名", "勤務月", "支給日",
-    "健康保険料", "介護保険料", "厚生年金保険料", "雇用保険料", "源泉所得税", "組合費", "県連共済費",
+    "健康保険料", "介護保険料", "厚生年金保険料", "雇用保険料", "源泉所得税", "支援金(本人)", "組合費", "県連共済費",
     "健康保険料(会社分)", "介護保険料(会社分)", "厚生年金保険料(会社分)", "雇用保険料(会社分)",
-    "労災保険料", "子ども・子育て拠出金", "年末調整還付", "年末調整徴収", "コスト合計",
+    "労災保険料", "子ども・子育て拠出金", "支援金(会社)", "年末調整還付", "年末調整徴収", "コスト合計",
   ];
   const rows = records.map((r) => {
     const s = r.result;
@@ -170,9 +173,9 @@ export function exportCostCsv(records: SalaryRecord[]): void {
       r.input.name,
       `${r.input.workYear}/${String(r.input.workMonth).padStart(2, "0")}`,
       `${s.paymentYear}/${String(s.paymentMonth).padStart(2, "0")}${s.paymentDay ? "/" + String(s.paymentDay).padStart(2, "0") : ""}`,
-      s.healthEmployee, s.kaigoEmployee, s.pensionEmployee, s.koyoEmployee, s.incomeTax, s.kumiaiFee, s.kenrenKyosai ?? 0,
+      s.healthEmployee, s.kaigoEmployee, s.pensionEmployee, s.koyoEmployee, s.incomeTax, s.shienkinEmployee ?? 0, s.kumiaiFee, s.kenrenKyosai ?? 0,
       s.healthEmployer, s.kaigoEmployer, s.pensionEmployer, s.koyoEmployer,
-      s.rousai, s.kodomoContribution, s.nenmatsuRefund ?? 0, s.nenmatsuCollect ?? 0,
+      s.rousai, s.kodomoContribution, s.shienkinEmployer ?? 0, s.nenmatsuRefund ?? 0, s.nenmatsuCollect ?? 0,
       recordCost(r),
     ];
   });

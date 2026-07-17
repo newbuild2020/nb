@@ -15,6 +15,7 @@ import {
   kodomoRate,
   pensionSmrRange,
   calcWithholdingTax,
+  shienkinRate,
   type KoyoIndustry,
 } from "./payrollRates";
 import { adjustToBusinessDay } from "./jpHolidays";
@@ -191,6 +192,7 @@ export interface AppliedRates {
   koyoEmployeeRate: number;
   koyoEmployerRate: number;
   kodomoRate: number;
+  shienkinRate: number; // 子ども・子育て支援金率(令和8年4月分〜)
   taxYear: number; // 所得税の適用年(支給年)
 }
 
@@ -210,6 +212,7 @@ export interface PayrollResult {
   pensionEmployee: number;
   koyoEmployee: number;
   incomeTax: number;
+  shienkinEmployee: number; // 子ども・子育て支援金(本人)
   kumiaiFee: number;
   kenrenKyosai: number;
   totalEmployeeDeduction: number;
@@ -222,6 +225,7 @@ export interface PayrollResult {
   pensionEmployer: number;
   koyoEmployer: number;
   kodomoContribution: number;
+  shienkinEmployer: number; // 子ども・子育て支援金(会社分)
   rousai: number;
   totalEmployerBurden: number;
   totalCompanyCost: number; // 総支給額 + 会社負担合計
@@ -254,6 +258,7 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   const pensionRateP = pensionRate(wy, wm);
   const koyo = koyoRates(wy, wm, input.koyoIndustry);
   const kodomoRateP = kodomoRate(wy, wm);
+  const shienkinRateP = shienkinRate(wy, wm);
 
   // 保険料の対象月は勤務月で判定
   const healthOk = isHealthTarget(birth, wy, wm);
@@ -262,6 +267,7 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
 
   // ---- 健康保険・介護保険 ----
   let healthEmployee = 0, healthEmployer = 0, kaigoEmployee = 0, kaigoEmployer = 0;
+  let shienkinEmployee = 0, shienkinEmployer = 0;
   if (input.insuranceType === "kyokai") {
     if (healthOk) {
       const total = hSmr * (kenpoRateP / 100);
@@ -271,6 +277,12 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
         const kTotal = hSmr * (kaigoRateP / 100);
         kaigoEmployee = roundEmployeeShare(kTotal / 2);
         kaigoEmployer = Math.round(kTotal) - kaigoEmployee;
+      }
+      if (shienkinRateP > 0) {
+        // 子ども・子育て支援金(令和8年4月分〜): 健康保険とあわせて徴収・労使折半
+        const sTotal = hSmr * (shienkinRateP / 100);
+        shienkinEmployee = roundEmployeeShare(sTotal / 2);
+        shienkinEmployer = Math.round(sTotal) - shienkinEmployee;
       }
     }
   } else {
@@ -303,7 +315,7 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   const kodomoContribution = pensionOk ? Math.round(pSmr * (kodomoRateP / 100)) : 0;
 
   // ---- 源泉所得税(支給日の属する年の計算式を適用。手動指定があれば優先) ----
-  const shakaiHoken = healthEmployee + kaigoEmployee + pensionEmployee + koyoEmployee;
+  const shakaiHoken = healthEmployee + kaigoEmployee + pensionEmployee + koyoEmployee + shienkinEmployee;
   const incomeTax =
     input.incomeTaxOverride != null
       ? Math.max(0, Math.round(input.incomeTaxOverride))
@@ -318,7 +330,8 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
   const netPay = gross - totalEmployeeDeduction + nenmatsuRefund - nenmatsuCollect;
 
   const totalEmployerBurden =
-    healthEmployer + kaigoEmployer + pensionEmployer + koyoEmployer + kodomoContribution + rousai;
+    healthEmployer + kaigoEmployer + pensionEmployer + koyoEmployer +
+    kodomoContribution + shienkinEmployer + rousai;
 
   return {
     paymentYear,
@@ -338,6 +351,7 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
       koyoEmployeeRate: koyo.employee,
       koyoEmployerRate: koyo.employer,
       kodomoRate: kodomoRateP,
+      shienkinRate: shienkinRateP,
       taxYear: paymentYear,
     },
     healthEmployee,
@@ -345,6 +359,7 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
     pensionEmployee,
     koyoEmployee,
     incomeTax,
+    shienkinEmployee,
     kumiaiFee,
     kenrenKyosai,
     totalEmployeeDeduction,
@@ -356,6 +371,7 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
     pensionEmployer,
     koyoEmployer,
     kodomoContribution,
+    shienkinEmployer,
     rousai,
     totalEmployerBurden,
     totalCompanyCost: gross + totalEmployerBurden,

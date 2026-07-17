@@ -500,7 +500,7 @@ export default function SalaryPage() {
               <p className="text-sm text-gray-600">
                 {PREFECTURE_NAMES[prefectureIndex]} の協会けんぽ料率
                 {result && `(${result.applied.kenpoFiscalLabel}: 健保 ${result.applied.kenpoRate}%・介護 ${result.applied.kaigoRate}%)`}
-                を労使折半で計算します。勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和7)年度の公式料率を自動適用します。
+                を労使折半で計算します。勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和8)年度の公式料率を自動適用します。
               </p>
             ) : (
               <div className="space-y-4">
@@ -590,6 +590,7 @@ export default function SalaryPage() {
                   {insuranceType === "kyokai" && <div>介護保険: {result.applied.kaigoRate}%</div>}
                   <div>厚生年金: {result.applied.pensionRate}%</div>
                   <div>子ども・子育て拠出金: {result.applied.kodomoRate}%</div>
+                  {result.applied.shienkinRate > 0 && <div>子ども・子育て支援金: {result.applied.shienkinRate}%</div>}
                   {!isExecutive && <div>雇用保険 本人: {result.applied.koyoEmployeeRate}%({KOYO_INDUSTRY_LABELS[koyoIndustry]})</div>}
                   {!isExecutive && <div>雇用保険 会社: {result.applied.koyoEmployerRate}%</div>}
                   <div>所得税: {result.applied.taxYear}年分の計算式</div>
@@ -631,6 +632,12 @@ export default function SalaryPage() {
                       <td className="py-2 text-gray-600">雇用保険料{isExecutive && "(役員対象外)"}</td>
                       <td className="py-2 text-right text-red-600">-{yen(result.koyoEmployee)}</td>
                     </tr>
+                    {result.shienkinEmployee > 0 && (
+                      <tr className="border-b">
+                        <td className="py-2 text-gray-600">子ども・子育て支援金</td>
+                        <td className="py-2 text-right text-red-600">-{yen(result.shienkinEmployee)}</td>
+                      </tr>
+                    )}
                     <tr className="border-b">
                       <td className="py-2 text-gray-600">
                         源泉所得税
@@ -732,6 +739,12 @@ export default function SalaryPage() {
                       <td className="py-2 text-gray-600">子ども・子育て拠出金({result.applied.kodomoRate}%)</td>
                       <td className="py-2 text-right">{yen(result.kodomoContribution)}</td>
                     </tr>
+                    {result.shienkinEmployer > 0 && (
+                      <tr className="border-b">
+                        <td className="py-2 text-gray-600">子ども・子育て支援金(会社分)</td>
+                        <td className="py-2 text-right">{yen(result.shienkinEmployer)}</td>
+                      </tr>
+                    )}
                     <tr className="border-b">
                       <td className="py-2 font-bold text-gray-800">会社負担合計</td>
                       <td className="py-2 text-right font-bold text-orange-600 text-lg">{yen(result.totalEmployerBurden)}</td>
@@ -765,7 +778,7 @@ export default function SalaryPage() {
               </section>
 
               <p className="text-xs text-gray-400 leading-relaxed">
-                ※ 勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和7)年度の公式料率
+                ※ 勤務月に応じて {KENPO_MIN_YEAR}(平成28)〜{KENPO_MAX_YEAR}(令和8)年度の公式料率
                 (協会けんぽ都道府県別料率・介護保険・厚生年金・雇用保険(業種別)・子ども・子育て拠出金)を自動適用します。
                 源泉所得税は支給年の電算機計算の特例(甲欄)により計算しています。
                 住民税・通勤手当の非課税処理などは含みません。実際の給与計算では公式の保険料額表もあわせてご確認ください。

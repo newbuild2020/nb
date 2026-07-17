@@ -335,6 +335,9 @@ function DetailBlock({ r }: { r: SalaryRecord }) {
               <tr className="border-b"><td className="py-1.5 text-gray-600">厚生年金保険料</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.pensionEmployee)}</td></tr>
               <tr className="border-b"><td className="py-1.5 text-gray-600">雇用保険料</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.koyoEmployee)}</td></tr>
               <tr className="border-b"><td className="py-1.5 text-gray-600">源泉所得税</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.incomeTax)}</td></tr>
+              {(r.result.shienkinEmployee ?? 0) > 0 && (
+                <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て支援金</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.shienkinEmployee)}</td></tr>
+              )}
               {r.result.kumiaiFee > 0 && (
                 <tr className="border-b"><td className="py-1.5 text-gray-600">組合費</td><td className="py-1.5 text-right text-red-600">-{yen(r.result.kumiaiFee)}</td></tr>
               )}
@@ -357,6 +360,9 @@ function DetailBlock({ r }: { r: SalaryRecord }) {
               <tr className="border-b"><td className="py-1.5 text-gray-600">雇用保険料(会社分)</td><td className="py-1.5 text-right">{yen(r.result.koyoEmployer)}</td></tr>
               <tr className="border-b"><td className="py-1.5 text-gray-600">労災保険料</td><td className="py-1.5 text-right">{yen(r.result.rousai)}</td></tr>
               <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て拠出金</td><td className="py-1.5 text-right">{yen(r.result.kodomoContribution)}</td></tr>
+              {(r.result.shienkinEmployer ?? 0) > 0 && (
+                <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て支援金(会社分)</td><td className="py-1.5 text-right">{yen(r.result.shienkinEmployer)}</td></tr>
+              )}
               <tr className="border-b"><td className="py-1.5 font-bold">会社負担合計</td><td className="py-1.5 text-right font-bold text-orange-600">{yen(r.result.totalEmployerBurden)}</td></tr>
               <tr><td className="py-2 font-bold">コスト合計</td><td className="py-2 text-right font-bold text-lg">{yen(recordCost(r))}</td></tr>
             </tbody>
