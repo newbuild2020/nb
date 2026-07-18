@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { isLoggedIn, login, logout } from "./lib/auth";
 
@@ -85,7 +84,12 @@ export default function Home() {
       {/* メイン */}
       <main className="flex-1 w-full flex flex-col items-center justify-center px-4 py-10">
         <div className="flex flex-col items-center gap-3 mb-10 sm:mb-12">
-          <Image src="/icon-64.png" alt="logo" width={64} height={64} className="rounded-xl shadow-sm" />
+          {/* ロゴはテーマに追従(ライト=紺 / ダーク=白) */}
+          <picture>
+            <source srcSet="/icon-64-dark.png" media="(prefers-color-scheme: dark)" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon-64.png" alt="logo" width={64} height={64} />
+          </picture>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-center">
             {COMPANY_NAME}
           </h1>
