@@ -453,7 +453,7 @@ function DetailBlock({ r }: { r: SalaryRecord }) {
           <h4 className="text-sm font-bold text-gray-700 mb-2">本人(手取り)</h4>
           <table className="w-full text-sm">
             <tbody>
-              <tr className="border-b"><td className="py-1.5 text-gray-600">総支給額</td><td className="py-1.5 text-right whitespace-nowrap">{yen(r.input.grossSalary)}</td></tr>
+              <tr className="border-b"><td className="py-1.5 text-gray-600">{exec ? "役員報酬(総支給額)" : "総支給額"}</td><td className="py-1.5 text-right whitespace-nowrap">{yen(r.input.grossSalary)}</td></tr>
               <tr className="border-b"><td className="py-1.5 text-gray-600">健康保険料{kyokai ? pct(a?.kenpoRate) : "(全額本人負担)"}</td><td className="py-1.5 text-right whitespace-nowrap text-red-600">-{yen(r.result.healthEmployee)}</td></tr>
               <tr className="border-b"><td className="py-1.5 text-gray-600">介護保険料{r.result.kaigoApplied && kyokai && pct(a?.kaigoRate)}</td><td className="py-1.5 text-right whitespace-nowrap text-red-600">-{yen(r.result.kaigoEmployee)}</td></tr>
               {(r.result.shienkinEmployee ?? 0) > 0 && (

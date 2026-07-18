@@ -486,12 +486,17 @@ export default function SalaryPage() {
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <label className={labelCls}>月額給与(総支給額・円)</label>
+                <label className={labelCls}>{isExecutive ? "役員報酬(月額・円)" : "月額給与(総支給額・円)"}</label>
                 <input
                   type="number" min={0} step={1000} className={inputCls} placeholder="0"
                   value={grossSalaryStr}
                   onChange={(e) => setGrossSalaryStr(e.target.value)}
                 />
+                {isExecutive && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    ※ 役員報酬は原則毎月同額(定期同額給与)。年度途中の変更は法人税の損金算入に影響します。
+                  </p>
+                )}
               </div>
               <div>
                 <label className={labelCls}>年末調整 還付(円・手取りに加算)</label>
@@ -712,7 +717,7 @@ export default function SalaryPage() {
                 <table className="w-full text-sm">
                   <tbody>
                     <tr className="border-b">
-                      <td className="py-2 text-gray-600">総支給額</td>
+                      <td className="py-2 text-gray-600">{isExecutive ? "役員報酬(総支給額)" : "総支給額"}</td>
                       <td className="py-2 text-right whitespace-nowrap font-medium">{yen(grossSalary)}</td>
                     </tr>
                     <tr className="border-b">
