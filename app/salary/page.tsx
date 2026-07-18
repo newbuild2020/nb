@@ -23,6 +23,8 @@ import {
   ROUSAI_DEFAULT_KEY,
   rousaiKeyFromRate,
   calcPayroll,
+  isKaigoTarget,
+  shienkinRate,
   type PayrollInput,
   type KoyoIndustry,
 } from "../lib/payroll";
@@ -51,6 +53,7 @@ export default function SalaryPage() {
   const [insuranceType, setInsuranceType] = useState<"kyokai" | "kumiai">("kyokai");
   const [kumiaiHealthStr, setKumiaiHealthStr] = useState("");
   const [kumiaiKaigoStr, setKumiaiKaigoStr] = useState("");
+  const [kumiaiShienkinStr, setKumiaiShienkinStr] = useState("");
   const [kumiaiFeeStr, setKumiaiFeeStr] = useState("");
   const [kenrenKyosaiStr, setKenrenKyosaiStr] = useState("");
   const [koyoIndustry, setKoyoIndustry] = useState<KoyoIndustry>("construction");
@@ -67,6 +70,7 @@ export default function SalaryPage() {
   const dependents = Math.max(0, Math.floor(Number(dependentsStr) || 0));
   const kumiaiHealthMonthly = Math.max(0, Number(kumiaiHealthStr) || 0);
   const kumiaiKaigoMonthly = Math.max(0, Number(kumiaiKaigoStr) || 0);
+  const kumiaiShienkinMonthly = Math.max(0, Number(kumiaiShienkinStr) || 0);
   const kumiaiFee = Math.max(0, Number(kumiaiFeeStr) || 0);
   const kenrenKyosai = Math.max(0, Number(kenrenKyosaiStr) || 0);
   // 労災保険率は公式の事業の種類から自動決定(手入力なし)
@@ -109,6 +113,7 @@ export default function SalaryPage() {
         setInsuranceType(i.insuranceType);
         setKumiaiHealthStr(i.kumiaiHealthMonthly ? String(i.kumiaiHealthMonthly) : "");
         setKumiaiKaigoStr(i.kumiaiKaigoMonthly ? String(i.kumiaiKaigoMonthly) : "");
+        setKumiaiShienkinStr(i.kumiaiShienkinMonthly ? String(i.kumiaiShienkinMonthly) : "");
         setKumiaiFeeStr(i.kumiaiFee ? String(i.kumiaiFee) : "");
         setKenrenKyosaiStr(i.kenrenKyosai ? String(i.kenrenKyosai) : "");
         setKoyoIndustry(i.koyoIndustry ?? "construction");
@@ -236,6 +241,7 @@ export default function SalaryPage() {
       insuranceType,
       kumiaiHealthMonthly,
       kumiaiKaigoMonthly,
+      kumiaiShienkinMonthly,
       kumiaiFee,
       kenrenKyosai,
       koyoIndustry,
@@ -247,9 +253,17 @@ export default function SalaryPage() {
     };
   }, [
     name, birth, prefectureIndex, isExecutive, workYear, workMonth, paymentOffset,
-    grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiKaigoMonthly, kumiaiFee, kenrenKyosai,
+    grossSalary, dependents, insuranceType, kumiaiHealthMonthly, kumiaiKaigoMonthly, kumiaiShienkinMonthly, kumiaiFee, kenrenKyosai,
     koyoIndustry, rousaiRate, rousaiApplied, incomeTaxOverride, nenmatsuRefund, nenmatsuCollect,
   ]);
+
+  // 勤務月時点で介護保険第2号被保険者(40〜64歳)か(国保組合の介護分入力の表示判定)
+  const kaigoEligible = (() => {
+    if (!birth) return false;
+    try { return isKaigoTarget(new Date(birth + "T00:00:00"), workYear, workMonth); } catch { return false; }
+  })();
+  // 子ども・子育て支援金の制度対象月か(令和8年4月分〜。年齢制限はなし)
+  const shienkinActive = shienkinRate(workYear, workMonth) > 0;
 
   const result = useMemo(() => {
     if (!currentInput) return null;
@@ -272,6 +286,7 @@ export default function SalaryPage() {
     setInsuranceType("kyokai");
     setKumiaiHealthStr("");
     setKumiaiKaigoStr("");
+    setKumiaiShienkinStr("");
     setKumiaiFeeStr("");
     setKenrenKyosaiStr("");
     setIncomeTaxOverride(null);
@@ -542,17 +557,28 @@ export default function SalaryPage() {
                     value={kumiaiHealthStr}
                     onChange={(e) => setKumiaiHealthStr(e.target.value)} />
                 </div>
-                <div>
-                  <label className={labelCls}>介護保険料の月額(円・40〜64歳のみ控除)</label>
-                  <input type="number" min={0} step={100} className={inputCls} placeholder="0"
-                    value={kumiaiKaigoStr}
-                    onChange={(e) => setKumiaiKaigoStr(e.target.value)} />
-                  {result && !result.kaigoApplied && kumiaiKaigoMonthly > 0 && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      ※ この勤務月は介護保険第2号被保険者(40〜64歳)に該当しないため控除されません。
+                {/* 介護分: 勤務月時点で40〜64歳(第2号被保険者)のときだけ表示 */}
+                {kaigoEligible && (
+                  <div>
+                    <label className={labelCls}>介護保険料の月額(円・40〜64歳のみ控除)</label>
+                    <input type="number" min={0} step={100} className={inputCls} placeholder="0"
+                      value={kumiaiKaigoStr}
+                      onChange={(e) => setKumiaiKaigoStr(e.target.value)} />
+                  </div>
+                )}
+                {/* 支援金分: 制度が始まる令和8年4月分以降のみ表示(年齢制限なし・全加入者対象) */}
+                {shienkinActive && (
+                  <div>
+                    <label className={labelCls}>子ども・子育て支援金の月額(円・全額本人負担)</label>
+                    <input type="number" min={0} step={10} className={inputCls} placeholder="0"
+                      value={kumiaiShienkinStr}
+                      onChange={(e) => setKumiaiShienkinStr(e.target.value)} />
+                    <p className="text-xs text-gray-500 mt-1">
+                      ※ 令和8年4月分から国保組合も徴収します。年齢に関係なく全加入者が対象です。
+                      組合の案内額を入力してください(社会保険料控除の対象=税引き前に控除)。
                     </p>
-                  )}
-                </div>
+                  </div>
+                )}
                 <div>
                   <label className={labelCls}>組合費(円/月・給与から控除)</label>
                   <input type="number" min={0} step={100} className={inputCls} placeholder="0"
@@ -663,7 +689,9 @@ export default function SalaryPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-600">
                   {insuranceType === "kyokai" && <div>健康保険: {result.applied.kenpoRate}%</div>}
                   {insuranceType === "kyokai" && <div>介護保険: {result.applied.kaigoRate}%</div>}
-                  {result.applied.shienkinRate > 0 && <div>子ども・子育て支援金: {result.applied.shienkinRate}%</div>}
+                  {result.applied.shienkinRate > 0 && (
+                    <div>子ども・子育て支援金: {insuranceType === "kumiai" ? "組合の定額(全額本人負担)" : `${result.applied.shienkinRate}%`}</div>
+                  )}
                   <div>厚生年金: {result.applied.pensionRate}%</div>
                   <div>子ども・子育て拠出金: {result.applied.kodomoRate}%(会社のみ)</div>
                   {!isExecutive && <div>雇用保険 本人: {result.applied.koyoEmployeeRate}%({KOYO_INDUSTRY_LABELS[koyoIndustry]})</div>}
@@ -702,7 +730,7 @@ export default function SalaryPage() {
                     </tr>
                     {result.shienkinEmployee > 0 && (
                       <tr className="border-b">
-                        <td className="py-2 text-gray-600">子ども・子育て支援金({result.applied.shienkinRate}% 労使折半)</td>
+                        <td className="py-2 text-gray-600">子ども・子育て支援金{insuranceType === "kumiai" ? "(全額本人負担)" : `(${result.applied.shienkinRate}% 労使折半)`}</td>
                         <td className="py-2 text-right whitespace-nowrap text-red-600">-{yen(result.shienkinEmployee)}</td>
                       </tr>
                     )}

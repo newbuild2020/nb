@@ -18,6 +18,8 @@ import {
   shienkinRate,
   type KoyoIndustry,
 } from "./payrollRates";
+
+export { shienkinRate } from "./payrollRates";
 import { adjustToBusinessDay } from "./jpHolidays";
 
 export {
@@ -171,6 +173,13 @@ export interface PayrollInput {
    * 40〜64歳(介護保険第2号被保険者)の月のみ控除される。
    */
   kumiaiKaigoMonthly: number;
+  /**
+   * 国保組合・その他の子ども・子育て支援金の月額(円)。
+   * 令和8年4月分〜、全医療保険者が徴収(国保組合も対象)。
+   * 年齢制限なし・全額本人負担(組合の案内額を入力)。
+   * 社会保険料控除の対象のため税引き前に控除される。
+   */
+  kumiaiShienkinMonthly?: number;
   kumiaiFee: number; // 組合費(本人給与から控除・円/月)
   kenrenKyosai: number; // 県連共済費(本人給与から控除・円/月)
   koyoIndustry: KoyoIndustry; // 雇用保険の業種区分
@@ -302,6 +311,12 @@ export function calcPayroll(input: PayrollInput): PayrollResult {
     healthEmployee = Math.round(input.kumiaiHealthMonthly || 0);
     if (kaigoOk) {
       kaigoEmployee = Math.round(input.kumiaiKaigoMonthly || 0);
+    }
+    if (shienkinRateP > 0) {
+      // 子ども・子育て支援金は国保組合でも徴収(令和8年4月分〜)。
+      // 年齢制限なし・組合の定額・全額本人負担(会社負担なし)。
+      // 社会保険料として shakaiHoken に含まれ税引き前に控除される。
+      shienkinEmployee = Math.round(input.kumiaiShienkinMonthly || 0);
     }
   }
 

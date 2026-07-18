@@ -457,7 +457,7 @@ function DetailBlock({ r }: { r: SalaryRecord }) {
               <tr className="border-b"><td className="py-1.5 text-gray-600">健康保険料{kyokai ? pct(a?.kenpoRate) : "(全額本人負担)"}</td><td className="py-1.5 text-right whitespace-nowrap text-red-600">-{yen(r.result.healthEmployee)}</td></tr>
               <tr className="border-b"><td className="py-1.5 text-gray-600">介護保険料{r.result.kaigoApplied && kyokai && pct(a?.kaigoRate)}</td><td className="py-1.5 text-right whitespace-nowrap text-red-600">-{yen(r.result.kaigoEmployee)}</td></tr>
               {(r.result.shienkinEmployee ?? 0) > 0 && (
-                <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て支援金{pct(a?.shienkinRate)}</td><td className="py-1.5 text-right whitespace-nowrap text-red-600">-{yen(r.result.shienkinEmployee)}</td></tr>
+                <tr className="border-b"><td className="py-1.5 text-gray-600">子ども・子育て支援金{kyokai ? pct(a?.shienkinRate) : "(全額本人負担)"}</td><td className="py-1.5 text-right whitespace-nowrap text-red-600">-{yen(r.result.shienkinEmployee)}</td></tr>
               )}
               <tr className="border-b"><td className="py-1.5 text-gray-600">厚生年金保険料{pct(a?.pensionRate)}</td><td className="py-1.5 text-right whitespace-nowrap text-red-600">-{yen(r.result.pensionEmployee)}</td></tr>
               <tr className="border-b"><td className="py-1.5 text-gray-600">雇用保険料{exec ? "(役員対象外)" : a && `(本人 ${a.koyoEmployeeRate}%)`}</td><td className="py-1.5 text-right whitespace-nowrap text-red-600">-{yen(r.result.koyoEmployee)}</td></tr>
