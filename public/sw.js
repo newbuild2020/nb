@@ -1,5 +1,5 @@
 /* NewBuild PWA Service Worker */
-const CACHE_NAME = 'newbuild-v5';
+const CACHE_NAME = 'newbuild-v6';
 const OFFLINE_URL = '/offline.html';
 
 const PRECACHE_URLS = [
